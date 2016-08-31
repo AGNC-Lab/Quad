@@ -1,0 +1,11 @@
+- button_publisher.py and button_subscriber.py
+Run both and you will get two windows, move the slider
+from the window in button_publisher and click send
+and button_subscriber should update its number to
+match the publisher
+
+- image_updater.py and key_publisher.py
+Run both and you will get two windows one blank and one with an 'x'
+key_publisher runs on a keyPressedEvent hander that reacts whenever you
+click an arrow key when on the "Event hander" window. Pressing the keys will
+cause the 'x' on the other window to move around
