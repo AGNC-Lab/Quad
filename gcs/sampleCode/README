@@ -9,3 +9,5 @@ Run both and you will get two windows one blank and one with an 'x'
 key_publisher runs on a keyPressedEvent hander that reacts whenever you
 click an arrow key when on the "Event hander" window. Pressing the keys will
 cause the 'x' on the other window to move around
+
+use rosrun to run scripts....
