@@ -1,4 +1,4 @@
-# Install script for directory: /home/rnl/Documents/niki_pilot/multithreaded
+# Install script for directory: /home/niklas/Programming/Lab/quad/Quad/multithreaded
 
 # Set the install prefix
 IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -38,7 +38,7 @@ ELSE(CMAKE_INSTALL_COMPONENT)
   SET(CMAKE_INSTALL_MANIFEST "install_manifest.txt")
 ENDIF(CMAKE_INSTALL_COMPONENT)
 
-FILE(WRITE "/home/rnl/Documents/niki_pilot/multithreaded/${CMAKE_INSTALL_MANIFEST}" "")
+FILE(WRITE "/home/niklas/Programming/Lab/quad/Quad/multithreaded/${CMAKE_INSTALL_MANIFEST}" "")
 FOREACH(file ${CMAKE_INSTALL_MANIFEST_FILES})
-  FILE(APPEND "/home/rnl/Documents/niki_pilot/multithreaded/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
+  FILE(APPEND "/home/niklas/Programming/Lab/quad/Quad/multithreaded/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
 ENDFOREACH(file)

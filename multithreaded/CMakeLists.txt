@@ -18,7 +18,7 @@ file(GLOB SRC_FILES
 		MPU6050/*.cpp
 		pevents/*.cpp
 		I2C/*.cpp
-		threads/*.h
+		threads/*.cpp
         quad_threads.cpp
         )
 

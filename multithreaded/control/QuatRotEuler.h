@@ -1,6 +1,8 @@
 #ifndef FSW_CONTROL_QUATROTEULER_H
 #define FSW_CONTROL_QUATROTEULER_H
 
+#include "MatricesAndVectors.h"
+
 //Rotation matrix around x
 Mat3x3 Rotx(double theta);
 

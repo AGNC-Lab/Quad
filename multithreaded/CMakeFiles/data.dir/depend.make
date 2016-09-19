@@ -36,13 +36,7 @@ CMakeFiles/data.dir/pevents/pevents.cpp.o: pevents/pevents.cpp
 CMakeFiles/data.dir/pevents/pevents.cpp.o: pevents/pevents.h
 
 CMakeFiles/data.dir/quad_threads.cpp.o: I2C/i2c.h
-CMakeFiles/data.dir/quad_threads.cpp.o: MPU6050/MPU6050.h
-CMakeFiles/data.dir/quad_threads.cpp.o: MPU6050/MPU6050_6Axis_MotionApps20.h
-CMakeFiles/data.dir/quad_threads.cpp.o: MPU6050/dmp.h
-CMakeFiles/data.dir/quad_threads.cpp.o: MPU6050/helper_3dmath.h
-CMakeFiles/data.dir/quad_threads.cpp.o: PCA9685/pca9685.h
 CMakeFiles/data.dir/quad_threads.cpp.o: control/AttitudeControl.h
-CMakeFiles/data.dir/quad_threads.cpp.o: control/MathFuncs.h
 CMakeFiles/data.dir/quad_threads.cpp.o: control/MatricesAndVectors.h
 CMakeFiles/data.dir/quad_threads.cpp.o: control/PID_3DOF.h
 CMakeFiles/data.dir/quad_threads.cpp.o: control/QuatRotEuler.h
@@ -84,4 +78,47 @@ CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/std_msgs/Header.h
 CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/std_msgs/MultiArrayDimension.h
 CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/std_msgs/MultiArrayLayout.h
 CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/std_msgs/Time.h
+
+CMakeFiles/data.dir/threads/control_thread.cpp.o: threads/control_thread.cpp
+CMakeFiles/data.dir/threads/control_thread.cpp.o: threads/control_thread.h
+CMakeFiles/data.dir/threads/control_thread.cpp.o: control/AttitudeControl.h
+CMakeFiles/data.dir/threads/control_thread.cpp.o: control/MathFuncs.h
+CMakeFiles/data.dir/threads/control_thread.cpp.o: control/MatricesAndVectors.h
+CMakeFiles/data.dir/threads/control_thread.cpp.o: control/PID_3DOF.h
+CMakeFiles/data.dir/threads/control_thread.cpp.o: control/QuatRotEuler.h
+CMakeFiles/data.dir/threads/control_thread.cpp.o: pevents/pevents.h
+
+CMakeFiles/data.dir/threads/keyboard_thread.cpp.o: threads/keyboard_thread.cpp
+CMakeFiles/data.dir/threads/keyboard_thread.cpp.o: pevents/pevents.h
+CMakeFiles/data.dir/threads/keyboard_thread.cpp.o: threads/keyboard_thread.h
+
+CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o: threads/motor_ctr_thread.cpp
+CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o: threads/motor_ctr_thread.h
+CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o: control/MatricesAndVectors.h
+CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o: control/QuatRotEuler.h
+CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o: pevents/pevents.h
+
+CMakeFiles/data.dir/threads/mpu_thread.cpp.o: threads/mpu_thread.cpp
+CMakeFiles/data.dir/threads/mpu_thread.cpp.o: threads/mpu_thread.h
+CMakeFiles/data.dir/threads/mpu_thread.cpp.o: I2C/i2c.h
+CMakeFiles/data.dir/threads/mpu_thread.cpp.o: MPU6050/MPU6050.h
+CMakeFiles/data.dir/threads/mpu_thread.cpp.o: MPU6050/MPU6050_6Axis_MotionApps20.h
+CMakeFiles/data.dir/threads/mpu_thread.cpp.o: MPU6050/dmp.h
+CMakeFiles/data.dir/threads/mpu_thread.cpp.o: MPU6050/helper_3dmath.h
+CMakeFiles/data.dir/threads/mpu_thread.cpp.o: control/MatricesAndVectors.h
+CMakeFiles/data.dir/threads/mpu_thread.cpp.o: control/QuatRotEuler.h
+CMakeFiles/data.dir/threads/mpu_thread.cpp.o: pevents/pevents.h
+
+CMakeFiles/data.dir/threads/pca_thread.cpp.o: threads/pca_thread.cpp
+CMakeFiles/data.dir/threads/pca_thread.cpp.o: I2C/i2c.h
+CMakeFiles/data.dir/threads/pca_thread.cpp.o: PCA9685/pca9685.h
+CMakeFiles/data.dir/threads/pca_thread.cpp.o: control/MatricesAndVectors.h
+CMakeFiles/data.dir/threads/pca_thread.cpp.o: pevents/pevents.h
+CMakeFiles/data.dir/threads/pca_thread.cpp.o: threads/pca_thread.h
+
+CMakeFiles/data.dir/threads/print_thread.cpp.o: threads/print_thread.cpp
+CMakeFiles/data.dir/threads/print_thread.cpp.o: control/MatricesAndVectors.h
+CMakeFiles/data.dir/threads/print_thread.cpp.o: control/QuatRotEuler.h
+CMakeFiles/data.dir/threads/print_thread.cpp.o: pevents/pevents.h
+CMakeFiles/data.dir/threads/print_thread.cpp.o: threads/print_thread.h
 

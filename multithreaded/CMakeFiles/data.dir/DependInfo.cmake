@@ -4,16 +4,22 @@ SET(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 SET(CMAKE_DEPENDS_CHECK_CXX
-  "/home/rnl/Documents/niki_pilot/multithreaded/I2C/i2c.cpp" "/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir/I2C/i2c.cpp.o"
-  "/home/rnl/Documents/niki_pilot/multithreaded/MPU6050/MPU6050.cpp" "/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir/MPU6050/MPU6050.cpp.o"
-  "/home/rnl/Documents/niki_pilot/multithreaded/PCA9685/pca9685.cpp" "/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir/PCA9685/pca9685.cpp.o"
-  "/home/rnl/Documents/niki_pilot/multithreaded/control/AttitudeControl.cpp" "/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir/control/AttitudeControl.cpp.o"
-  "/home/rnl/Documents/niki_pilot/multithreaded/control/MathFuncs.cpp" "/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir/control/MathFuncs.cpp.o"
-  "/home/rnl/Documents/niki_pilot/multithreaded/control/MatricesAndVectors.cpp" "/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o"
-  "/home/rnl/Documents/niki_pilot/multithreaded/control/PID_3DOF.cpp" "/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir/control/PID_3DOF.cpp.o"
-  "/home/rnl/Documents/niki_pilot/multithreaded/control/QuatRotEuler.cpp" "/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir/control/QuatRotEuler.cpp.o"
-  "/home/rnl/Documents/niki_pilot/multithreaded/pevents/pevents.cpp" "/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir/pevents/pevents.cpp.o"
-  "/home/rnl/Documents/niki_pilot/multithreaded/quad_threads.cpp" "/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir/quad_threads.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/I2C/i2c.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/I2C/i2c.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/MPU6050/MPU6050.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/MPU6050/MPU6050.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/PCA9685/pca9685.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/PCA9685/pca9685.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/control/AttitudeControl.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/control/AttitudeControl.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/control/MathFuncs.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/control/MathFuncs.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/control/MatricesAndVectors.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/control/PID_3DOF.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/control/PID_3DOF.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/control/QuatRotEuler.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/control/QuatRotEuler.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/pevents/pevents.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/pevents/pevents.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/quad_threads.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/quad_threads.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/threads/control_thread.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/threads/control_thread.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/threads/keyboard_thread.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/threads/keyboard_thread.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/threads/motor_ctr_thread.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/threads/mpu_thread.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/threads/mpu_thread.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/threads/pca_thread.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/threads/pca_thread.cpp.o"
+  "/home/niklas/Programming/Lab/quad/Quad/multithreaded/threads/print_thread.cpp" "/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir/threads/print_thread.cpp.o"
   )
 SET(CMAKE_CXX_COMPILER_ID "GNU")
 

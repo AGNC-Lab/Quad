@@ -8,15 +8,15 @@
 #include <string>
 #include <termios.h>
 #include "pevents/pevents.h"	//Includes event handling (https://github.com/NeoSmart/PEvents)
-#include "MPU6050/dmp.h"				
-#include "PCA9685/pca9685.h"
+//#include "MPU6050/dmp.h"				
+//#include "PCA9685/pca9685.h"
 #include "I2C/i2c.h"
 #include "control/MatricesAndVectors.h"
 #include "control/QuatRotEuler.h"
-#include "control/MathFuncs.h"
+//#include "control/MathFuncs.h"
 #include "control/AttitudeControl.h"
 #include "control/PID_3DOF.h"
-#include "MPU6050/helper_3dmath.h"
+//#include "MPU6050/helper_3dmath.h"
 #include <vector>
 #include <math.h>
 #include <stdlib.h>
@@ -31,8 +31,9 @@
 #include "threads/control_thread.h"
 //#include "threads/overo.h"
 #include "threads/pca_thread.h"
-#include "threads/mpu_thread.h"
 #include "threads/print_thread.h"
+#include "threads/mpu_thread.h"
+
 //#include "rosserial/ros.h"
 
 //using std::cin;

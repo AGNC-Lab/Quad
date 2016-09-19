@@ -1,1 +1,1 @@
-/home/rnl/Documents/niki_pilot/multithreaded/CMakeFiles/data.dir
+/home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/data.dir
