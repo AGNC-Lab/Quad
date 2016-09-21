@@ -39,10 +39,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/niklas/Programming/Lab/quad/Quad/multithreaded
+CMAKE_SOURCE_DIR = /home/sahabi/AGNC/Quad/multithreaded
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/niklas/Programming/Lab/quad/Quad/multithreaded
+CMAKE_BINARY_DIR = /home/sahabi/AGNC/Quad/multithreaded
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -69,9 +69,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles /home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/niklas/Programming/Lab/quad/Quad/multithreaded/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -351,30 +351,6 @@ quad_threads.cpp.s:
 	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/quad_threads.cpp.s
 .PHONY : quad_threads.cpp.s
 
-threads/control_thread.o: threads/control_thread.cpp.o
-.PHONY : threads/control_thread.o
-
-# target to build an object file
-threads/control_thread.cpp.o:
-	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/threads/control_thread.cpp.o
-.PHONY : threads/control_thread.cpp.o
-
-threads/control_thread.i: threads/control_thread.cpp.i
-.PHONY : threads/control_thread.i
-
-# target to preprocess a source file
-threads/control_thread.cpp.i:
-	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/threads/control_thread.cpp.i
-.PHONY : threads/control_thread.cpp.i
-
-threads/control_thread.s: threads/control_thread.cpp.s
-.PHONY : threads/control_thread.s
-
-# target to generate assembly for a file
-threads/control_thread.cpp.s:
-	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/threads/control_thread.cpp.s
-.PHONY : threads/control_thread.cpp.s
-
 threads/keyboard_thread.o: threads/keyboard_thread.cpp.o
 .PHONY : threads/keyboard_thread.o
 
@@ -398,30 +374,6 @@ threads/keyboard_thread.s: threads/keyboard_thread.cpp.s
 threads/keyboard_thread.cpp.s:
 	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/threads/keyboard_thread.cpp.s
 .PHONY : threads/keyboard_thread.cpp.s
-
-threads/motor_ctr_thread.o: threads/motor_ctr_thread.cpp.o
-.PHONY : threads/motor_ctr_thread.o
-
-# target to build an object file
-threads/motor_ctr_thread.cpp.o:
-	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o
-.PHONY : threads/motor_ctr_thread.cpp.o
-
-threads/motor_ctr_thread.i: threads/motor_ctr_thread.cpp.i
-.PHONY : threads/motor_ctr_thread.i
-
-# target to preprocess a source file
-threads/motor_ctr_thread.cpp.i:
-	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.i
-.PHONY : threads/motor_ctr_thread.cpp.i
-
-threads/motor_ctr_thread.s: threads/motor_ctr_thread.cpp.s
-.PHONY : threads/motor_ctr_thread.s
-
-# target to generate assembly for a file
-threads/motor_ctr_thread.cpp.s:
-	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.s
-.PHONY : threads/motor_ctr_thread.cpp.s
 
 threads/mpu_thread.o: threads/mpu_thread.cpp.o
 .PHONY : threads/mpu_thread.o
@@ -534,15 +486,9 @@ help:
 	@echo "... quad_threads.o"
 	@echo "... quad_threads.i"
 	@echo "... quad_threads.s"
-	@echo "... threads/control_thread.o"
-	@echo "... threads/control_thread.i"
-	@echo "... threads/control_thread.s"
 	@echo "... threads/keyboard_thread.o"
 	@echo "... threads/keyboard_thread.i"
 	@echo "... threads/keyboard_thread.s"
-	@echo "... threads/motor_ctr_thread.o"
-	@echo "... threads/motor_ctr_thread.i"
-	@echo "... threads/motor_ctr_thread.s"
 	@echo "... threads/mpu_thread.o"
 	@echo "... threads/mpu_thread.i"
 	@echo "... threads/mpu_thread.s"

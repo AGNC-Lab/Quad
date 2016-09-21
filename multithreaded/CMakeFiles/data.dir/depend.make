@@ -59,9 +59,7 @@ CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/ros/time.h
 CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/sensor_msgs/Joy.h
 CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/std_msgs/Float32MultiArray.h
 CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/time.cpp
-CMakeFiles/data.dir/quad_threads.cpp.o: threads/control_thread.h
 CMakeFiles/data.dir/quad_threads.cpp.o: threads/keyboard_thread.h
-CMakeFiles/data.dir/quad_threads.cpp.o: threads/motor_ctr_thread.h
 CMakeFiles/data.dir/quad_threads.cpp.o: threads/mpu_thread.h
 CMakeFiles/data.dir/quad_threads.cpp.o: threads/pca_thread.h
 CMakeFiles/data.dir/quad_threads.cpp.o: threads/print_thread.h
@@ -79,24 +77,9 @@ CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/std_msgs/MultiArrayDimension.h
 CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/std_msgs/MultiArrayLayout.h
 CMakeFiles/data.dir/quad_threads.cpp.o: rosserial/std_msgs/Time.h
 
-CMakeFiles/data.dir/threads/control_thread.cpp.o: threads/control_thread.cpp
-CMakeFiles/data.dir/threads/control_thread.cpp.o: threads/control_thread.h
-CMakeFiles/data.dir/threads/control_thread.cpp.o: control/AttitudeControl.h
-CMakeFiles/data.dir/threads/control_thread.cpp.o: control/MathFuncs.h
-CMakeFiles/data.dir/threads/control_thread.cpp.o: control/MatricesAndVectors.h
-CMakeFiles/data.dir/threads/control_thread.cpp.o: control/PID_3DOF.h
-CMakeFiles/data.dir/threads/control_thread.cpp.o: control/QuatRotEuler.h
-CMakeFiles/data.dir/threads/control_thread.cpp.o: pevents/pevents.h
-
 CMakeFiles/data.dir/threads/keyboard_thread.cpp.o: threads/keyboard_thread.cpp
 CMakeFiles/data.dir/threads/keyboard_thread.cpp.o: pevents/pevents.h
 CMakeFiles/data.dir/threads/keyboard_thread.cpp.o: threads/keyboard_thread.h
-
-CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o: threads/motor_ctr_thread.cpp
-CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o: threads/motor_ctr_thread.h
-CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o: control/MatricesAndVectors.h
-CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o: control/QuatRotEuler.h
-CMakeFiles/data.dir/threads/motor_ctr_thread.cpp.o: pevents/pevents.h
 
 CMakeFiles/data.dir/threads/mpu_thread.cpp.o: threads/mpu_thread.cpp
 CMakeFiles/data.dir/threads/mpu_thread.cpp.o: threads/mpu_thread.h

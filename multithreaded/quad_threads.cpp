@@ -27,8 +27,6 @@
 #include "rosserial/geometry_msgs/TransformStamped.h"
 #include "rosserial/geometry_msgs/PoseStamped.h"
 #include "threads/keyboard_thread.h"
-#include "threads/motor_ctr_thread.h"
-#include "threads/control_thread.h"
 //#include "threads/overo.h"
 #include "threads/pca_thread.h"
 #include "threads/print_thread.h"
@@ -351,7 +349,272 @@ char getch() { //This function allows to capture char without needing to press '
 	return (buf);
 }
 
+void *Control_Timer(void *threadID){
 
+	printf("Control_Timer has started!\n");
+	int SamplingTime = 3;	//Sampling time in milliseconds
+	int localCurrentState;
+
+	while(1){
+		WaitForEvent(e_Timeout,SamplingTime);
+
+		//Check system state
+		pthread_mutex_lock(&stateMachine_Mutex);
+		localCurrentState = currentState;
+		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		//check if system should be terminated
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+
+		SetEvent(e_Control_trigger);
+	}
+	
+	printf("Control_Timer stopping...\n");
+	//Shutdown here
+	threadCount -= 1;
+	pthread_exit(NULL);
+}
+
+
+void *Control_Task(void *threadID){
+	printf("Control_Task has started!\n");
+
+	//Initialize PIDs (sets initial errors to zero)
+	pthread_mutex_lock(&PID_Mutex);
+	initializePID(&PID_att);
+	initializePID(&PID_angVel);
+	pthread_mutex_unlock(&PID_Mutex);
+	float dt = 0.003; 			//Sampling time
+	float takeOffThrust = 6; 	//Minimum thrust to take off
+	Vec3 localAttRef;
+
+	//Vectors of zeros
+	Vec3 zeros;
+	zeros.v[0] = 0; zeros.v[1] = 0; zeros.v[2] = 0; 
+
+	Vec4 IMU_localData_Quat;
+	Vec3 IMU_localData_Vel;
+	Vec3 IMU_localData_RPY;
+	Vec3 inputTorque;
+	Vec4 PCA_localData;
+	float localMotor_Speed;
+	int localCurrentState;
+
+
+	Vec3 error_att;
+	Vec3 error_att_vel;
+
+	Vec3 wDes;
+	Mat3x3 Rdes;
+	Mat3x3 Rbw;
+	
+
+	//Mat3x3 Rdes = RPY2Rot(0,0,0);
+
+	updatePar();
+
+	//PrintMat3x3(Concatenate3Vec3_2_Mat3x3(PID_att.K_p, PID_att.K_d, PID_att.K_i));
+	//PrintMat3x3(Concatenate3Vec3_2_Mat3x3(PID_angVel.K_p, PID_angVel.K_d, PID_angVel.K_i));
+
+	while(1){
+
+		WaitForEvent(e_Control_trigger,500);
+		_nh.spinOnce();
+
+		//Check system state
+		pthread_mutex_lock(&stateMachine_Mutex);
+		localCurrentState = currentState;
+		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		//check if system should be terminated
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+
+		//_nh.spinOnce();
+		pthread_mutex_lock(&attRef_Mutex);
+
+		if (yaw_ctr_neg < 0) {
+			attRef.v[2] -= yaw_Inc;
+			//if ((attRef.v[2] - yaw_Inc) < -PI) {
+			//	attRef.v[2] += 2*PI;
+			//}
+		}								//yaw
+		if (yaw_ctr_pos < 0) {
+			attRef.v[2] += yaw_Inc;
+			//if ((attRef.v[2] + yaw_Inc) > PI) {
+			//	attRef.v[2] -= 2*PI;
+			//}
+		}
+		//printf("yaw_ref = %-7f \n", attRef.v[2]*180/PI);
+		pthread_mutex_unlock(&attRef_Mutex);
+
+		//Throttle
+	    pthread_mutex_lock(&Motor_Speed_Mutex);
+		localMotor_Speed = Motor_Speed;
+		pthread_mutex_unlock(&Motor_Speed_Mutex);
+
+		//Grab attitude estimation
+		pthread_mutex_lock(&IMU_Mutex);
+		IMU_localData_Quat = IMU_Data_Quat;
+		IMU_localData_Vel = IMU_Data_Vel;
+		IMU_localData_RPY = IMU_Data_RPY;
+		pthread_mutex_unlock(&IMU_Mutex);
+
+		//Grab attitude reference
+		pthread_mutex_lock(&attRef_Mutex);
+		if (localMotor_Speed <= 0) {
+	    	attRef.v[2] = IMU_localData_RPY.v[2];
+	    }
+
+		localAttRef = attRef;
+	    pthread_mutex_unlock(&attRef_Mutex);
+
+
+	    Rdes = RPY2Rot(attRef.v[0], attRef.v[1], attRef.v[2]);
+	    Rbw = Quat2rot(IMU_localData_Quat);
+
+	    //Calculate attitude error
+	    error_att = AttitudeErrorVector(Rbw, Rdes);
+	    //PrintVec3(error_att, "error_att"); 
+		//error_att = Subtract3x1Vec(localAttRef, IMU_localData_RPY);
+		//PrintVec3(error_att,"error_att");
+
+		//Update PID
+		pthread_mutex_lock(&PID_Mutex);
+		if(!isNanVec3(error_att)){
+			updateErrorPID(&PID_att, error_att, zeros, dt);
+		}
+
+		//Dont integrate integrator if not in minimum thrust
+		if (localMotor_Speed < takeOffThrust){
+			resetIntegralErrorPID(&PID_att);
+		}
+		
+		//Reference for inner loop (angular velocity control)
+		wDes = outputPID(PID_att);
+
+		//Calculate angular velocity error and update PID
+		error_att_vel = Subtract3x1Vec(wDes, IMU_localData_Vel);
+		updateErrorPID(&PID_angVel, error_att_vel, zeros, dt);
+
+		if (localMotor_Speed < takeOffThrust){
+			resetIntegralErrorPID(&PID_angVel);
+		}
+
+		inputTorque = outputPID(PID_angVel);
+		pthread_mutex_unlock(&PID_Mutex);
+
+		//Distribute power to motors
+		pthread_mutex_lock(&Contr_Input_Mutex);
+		Contr_Input.v[0] = localMotor_Speed;
+		Contr_Input.v[1] = inputTorque.v[0];
+		Contr_Input.v[2] = inputTorque.v[1];
+		Contr_Input.v[3] = inputTorque.v[2];
+		pthread_mutex_unlock(&Contr_Input_Mutex);
+
+		PCA_localData = u2pwmXshape(Contr_Input);
+
+
+		//Send motor commands
+		pthread_mutex_lock(&PCA_Mutex);
+		PCA_Data = PCA_localData;
+		pthread_mutex_unlock(&PCA_Mutex);
+
+
+	}
+	
+	printf("Control_Task stopping...\n");
+	threadCount -= 1;
+	pthread_exit(NULL);
+}
+
+void *Motor_Control(void *threadID){
+
+	printf("Motor_Control has started!\n");
+	int SamplingTime = 10;	//Sampling time in milliseconds
+	float localMotor_Speed;
+	int localCurrentState;
+
+        //Initialize here
+	
+	while(1){
+		WaitForEvent(e_Timeout,SamplingTime);
+		_nh.spinOnce();
+
+		//Check system state
+		pthread_mutex_lock(&stateMachine_Mutex);
+		localCurrentState = currentState;
+		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		//check if system should be terminated
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+		
+		if (WaitForEvent(e_Motor_Up, 0) == 0) {
+		    //motor up
+		    pthread_mutex_lock(&Motor_Speed_Mutex);
+		    if (Motor_Speed < Motor_Speed_Max)
+				Motor_Speed += Motor_Speed_Inc;
+			localMotor_Speed = Motor_Speed;
+		    pthread_mutex_unlock(&Motor_Speed_Mutex);
+		    printf("Motor Speed: %f\n", localMotor_Speed);
+		}
+		else if (WaitForEvent(e_Motor_Down, 0) == 0) {
+		    //motor down
+		    pthread_mutex_lock(&Motor_Speed_Mutex);
+		    if (Motor_Speed > Motor_Speed_Min)
+				Motor_Speed -= Motor_Speed_Inc;
+			localMotor_Speed = Motor_Speed;
+		    pthread_mutex_unlock(&Motor_Speed_Mutex);
+		    printf("Motor Speed: %f\n", localMotor_Speed);
+		}
+		else if (WaitForEvent(e_Motor_Kill, 0) == 0) {
+		    //motor kill
+		    pthread_mutex_lock(&Motor_Speed_Mutex);
+		    Motor_Speed = 0;
+		    localMotor_Speed = Motor_Speed;
+		    pthread_mutex_unlock(&Motor_Speed_Mutex);
+		    printf("Motor Speed: %f\n", localMotor_Speed);
+		}
+		if (WaitForEvent(e_Roll_Pos, 0) == 0) {
+		    //motor up
+		    pthread_mutex_lock(&attRef_Mutex);
+			attRef.v[0] += attRef_Inc;
+		    pthread_mutex_unlock(&attRef_Mutex);
+		    printf("Roll Reference: %f\n", attRef.v[0]);
+		}
+		if (WaitForEvent(e_Roll_Neg, 0) == 0) {
+		    //motor up
+		    pthread_mutex_lock(&attRef_Mutex);
+			attRef.v[0] -= attRef_Inc;
+		    pthread_mutex_unlock(&attRef_Mutex);
+		    printf("Roll Reference: %f\n", attRef.v[0]);
+		}
+		if (WaitForEvent(e_Pitch_pos, 0) == 0) {
+		    //motor up
+		    pthread_mutex_lock(&attRef_Mutex);
+			attRef.v[1] += attRef_Inc;
+		    pthread_mutex_unlock(&attRef_Mutex);
+		    printf("Roll Reference: %f\n", attRef.v[0]);
+		}
+		if (WaitForEvent(e_Pitch_Neg, 0) == 0) {
+		    //motor up
+		    pthread_mutex_lock(&attRef_Mutex);
+			attRef.v[1] -= attRef_Inc;
+		    pthread_mutex_unlock(&attRef_Mutex);
+		    printf("Roll Reference: %f\n", attRef.v[0]);
+		}
+	}
+	
+	printf("Motor_Control stopping...\n");
+	//Shutdown here
+	threadCount -= 1;
+	pthread_exit(NULL);
+}
 
 int main(int argc, char *argv[])
 {
