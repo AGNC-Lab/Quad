@@ -237,7 +237,7 @@ void updatePar() {
 
     string line;
     vector<string> line_vec;
-    ifstream myfile ("config.txt");
+    ifstream myfile ("/home/root/config.txt");
     if (myfile.is_open()) {
 		while (getline (myfile ,line)) {
 		    line_vec = split(line, ' ');
@@ -542,7 +542,7 @@ void *Motor_Control(void *threadID){
 	
 	while(1){
 		WaitForEvent(e_Timeout,SamplingTime);
-		_nh.spinOnce();
+		//_nh.spinOnce();
 
 		//Check system state
 		pthread_mutex_lock(&stateMachine_Mutex);
@@ -652,7 +652,7 @@ int main(int argc, char *argv[])
 	ros::Subscriber<sensor_msgs::Joy> sub_mp_joy("/joy", handle_mp_joy_msg);
 	_nh.subscribe(sub_mp_joy);	
 
-  	ros::Subscriber<geometry_msgs::TransformStamped> sub_tform("/vicon/mk1/mk1", handle_pose_tform_msg);
+  	ros::Subscriber<geometry_msgs::TransformStamped> sub_tform("/vicon/Niki/Niki", handle_pose_tform_msg);
   	_nh.subscribe(sub_tform);
 
   	//ros publisher
