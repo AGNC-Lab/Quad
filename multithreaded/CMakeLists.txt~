@@ -13,7 +13,6 @@ include_directories(
 )
 
 file(GLOB SRC_FILES
-	kalman.cpp
         control/*.cpp
         PCA9685/*.cpp
 	MPU6050/*.cpp

@@ -12,6 +12,7 @@ SET(CMAKE_DEPENDS_CHECK_CXX
   "/home/sahabi/AGNC/Quad/multithreaded/control/MatricesAndVectors.cpp" "/home/sahabi/AGNC/Quad/multithreaded/CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o"
   "/home/sahabi/AGNC/Quad/multithreaded/control/PID_3DOF.cpp" "/home/sahabi/AGNC/Quad/multithreaded/CMakeFiles/data.dir/control/PID_3DOF.cpp.o"
   "/home/sahabi/AGNC/Quad/multithreaded/control/QuatRotEuler.cpp" "/home/sahabi/AGNC/Quad/multithreaded/CMakeFiles/data.dir/control/QuatRotEuler.cpp.o"
+  "/home/sahabi/AGNC/Quad/multithreaded/kalman.cpp" "/home/sahabi/AGNC/Quad/multithreaded/CMakeFiles/data.dir/kalman.cpp.o"
   "/home/sahabi/AGNC/Quad/multithreaded/pevents/pevents.cpp" "/home/sahabi/AGNC/Quad/multithreaded/CMakeFiles/data.dir/pevents/pevents.cpp.o"
   "/home/sahabi/AGNC/Quad/multithreaded/quad_threads.cpp" "/home/sahabi/AGNC/Quad/multithreaded/CMakeFiles/data.dir/quad_threads.cpp.o"
   "/home/sahabi/AGNC/Quad/multithreaded/threads/keyboard_thread.cpp" "/home/sahabi/AGNC/Quad/multithreaded/CMakeFiles/data.dir/threads/keyboard_thread.cpp.o"
@@ -35,6 +36,7 @@ SET(CMAKE_TARGET_LINKED_INFO_FILES
 # The include file search paths:
 SET(CMAKE_C_TARGET_INCLUDE_PATH
   "."
+  "/usr/local/include/eigen3"
   "rosserial"
   )
 SET(CMAKE_CXX_TARGET_INCLUDE_PATH ${CMAKE_C_TARGET_INCLUDE_PATH})

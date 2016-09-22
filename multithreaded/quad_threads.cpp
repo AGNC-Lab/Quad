@@ -31,7 +31,8 @@
 #include "threads/pca_thread.h"
 #include "threads/print_thread.h"
 #include "threads/mpu_thread.h"
-
+//add a header file for kalman
+#include "kalman.h"
 //#include "rosserial/ros.h"
 
 //using std::cin;
@@ -84,6 +85,8 @@ Vec3 IMU_Data_Accel;
 Vec3 IMU_Data_Vel;
 Vec3 attRef;
 Vec3 posRef;
+Vec3 velRef;
+Vec3 posRef_nofilter;
 Vec4 Contr_Input;
 Vec4 PCA_Data;
 PID_3DOF PID_angVel; 	//Angular velocity PID
@@ -94,6 +97,14 @@ float yaw_ctr_pos, yaw_ctr_neg;
 
 I2C i2c('3'); 
 
+
+//	MatrixXd z(3,1);   // measurement vector
+
+//	z << 1,
+//	     1,
+//	     1;
+
+//	std::cout << kalman(z) << std::endl;
 void *StateMachineTask(void *threadID){
 
 	printf("Initializing system... \n");
@@ -178,11 +189,27 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 
 void handle_pose_tform_msg(const geometry_msgs::TransformStamped& msg){
 
+    Eigen::MatrixXd z(3,1);   // measurement vector
+
+	z << msg.transform.translation.x,
+	     -msg.transform.translation.y,
+	     -msg.transform.translation.z;
+	posRef_nofilter.v[0] = msg.transform.translation.x;
+	posRef_nofilter.v[1] = msg.transform.translation.y;
+	posRef_nofilter.v[2] = msg.transform.translation.z;
+
+	Eigen::MatrixXd kalman_state =  kalman(z);
+
 	pthread_mutex_lock(&posRef_Mutex);	
 
- 	posRef.v[0] = msg.transform.translation.x;
-  	posRef.v[1] = -msg.transform.translation.y;
-  	posRef.v[2] = -msg.transform.translation.z;
+ 	posRef.v[0] = kalman_state(0,0);// - posRef_nofilter.v[0];
+  	posRef.v[1] = kalman_state(1,0);// - posRef_nofilter.v[1];
+  	posRef.v[2] = kalman_state(2,0);// - posRef_nofilter.v[2];
+
+ 	velRef.v[0] = kalman_state(3,0);// - posRef_nofilter.v[0];
+  	velRef.v[1] = kalman_state(4,0);// - posRef_nofilter.v[1];
+  	velRef.v[2] = kalman_state(5,0);// - posRef_nofilter.v[2];
+
 
   // _v_est = (_p_est - _p_est_prev)/(t - ts_last_pose);
   // std::cout << _v_est(0) << "\t" << _v_est(1) << "\t" << _v_est(2) << "\n";
@@ -196,7 +223,8 @@ void handle_pose_tform_msg(const geometry_msgs::TransformStamped& msg){
                    //1.0-2.0*(_q_est.y()*_q_est.y()+_q_est.z()*_q_est.z()));
 
   // _p_est_prev = _p_est;
-  	PrintVec3(posRef, "posRef");
+  	//PrintVec3(posRef, "posRef");
+  	PrintVec3(velRef, "velRef");
 
   	pthread_mutex_unlock(&posRef_Mutex);	
 
@@ -632,6 +660,7 @@ int main(int argc, char *argv[])
 	pthread_t PrintThread;			//handle for Printing thread
 	long IDthreadKeyboard, IDthreadIMU, IDthreadMAG; //Stores ID for threads
 	int ReturnCode;
+	kalman_init();
 
 	//ros::init(argc, argv, "talker");
 
@@ -665,7 +694,7 @@ int main(int argc, char *argv[])
 
   	rpyimu.data = Roll_pitch_yaw;
     imurpy_pub.publish( &rpyimu);
-    _nh.spinOnce();
+    //_nh.spinOnce();
     //delay(1000);
 
 

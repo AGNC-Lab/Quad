@@ -49,9 +49,32 @@ include CMakeFiles/data.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/data.dir/flags.make
 
+CMakeFiles/data.dir/kalman.cpp.o: CMakeFiles/data.dir/flags.make
+CMakeFiles/data.dir/kalman.cpp.o: kalman.cpp
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_1)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/kalman.cpp.o"
+	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/kalman.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/kalman.cpp
+
+CMakeFiles/data.dir/kalman.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/data.dir/kalman.cpp.i"
+	/usr/bin/arm-linux-gnueabi-g++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/sahabi/AGNC/Quad/multithreaded/kalman.cpp > CMakeFiles/data.dir/kalman.cpp.i
+
+CMakeFiles/data.dir/kalman.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/data.dir/kalman.cpp.s"
+	/usr/bin/arm-linux-gnueabi-g++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/sahabi/AGNC/Quad/multithreaded/kalman.cpp -o CMakeFiles/data.dir/kalman.cpp.s
+
+CMakeFiles/data.dir/kalman.cpp.o.requires:
+.PHONY : CMakeFiles/data.dir/kalman.cpp.o.requires
+
+CMakeFiles/data.dir/kalman.cpp.o.provides: CMakeFiles/data.dir/kalman.cpp.o.requires
+	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/kalman.cpp.o.provides.build
+.PHONY : CMakeFiles/data.dir/kalman.cpp.o.provides
+
+CMakeFiles/data.dir/kalman.cpp.o.provides.build: CMakeFiles/data.dir/kalman.cpp.o
+
 CMakeFiles/data.dir/control/MathFuncs.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/control/MathFuncs.cpp.o: control/MathFuncs.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_1)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_2)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/control/MathFuncs.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/control/MathFuncs.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/control/MathFuncs.cpp
 
@@ -74,7 +97,7 @@ CMakeFiles/data.dir/control/MathFuncs.cpp.o.provides.build: CMakeFiles/data.dir/
 
 CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o: control/MatricesAndVectors.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_2)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_3)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/control/MatricesAndVectors.cpp
 
@@ -97,7 +120,7 @@ CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o.provides.build: CMakeFiles/
 
 CMakeFiles/data.dir/control/AttitudeControl.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/control/AttitudeControl.cpp.o: control/AttitudeControl.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_3)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_4)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/control/AttitudeControl.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/control/AttitudeControl.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/control/AttitudeControl.cpp
 
@@ -120,7 +143,7 @@ CMakeFiles/data.dir/control/AttitudeControl.cpp.o.provides.build: CMakeFiles/dat
 
 CMakeFiles/data.dir/control/QuatRotEuler.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/control/QuatRotEuler.cpp.o: control/QuatRotEuler.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_4)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_5)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/control/QuatRotEuler.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/control/QuatRotEuler.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/control/QuatRotEuler.cpp
 
@@ -143,7 +166,7 @@ CMakeFiles/data.dir/control/QuatRotEuler.cpp.o.provides.build: CMakeFiles/data.d
 
 CMakeFiles/data.dir/control/PID_3DOF.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/control/PID_3DOF.cpp.o: control/PID_3DOF.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_5)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_6)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/control/PID_3DOF.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/control/PID_3DOF.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/control/PID_3DOF.cpp
 
@@ -166,7 +189,7 @@ CMakeFiles/data.dir/control/PID_3DOF.cpp.o.provides.build: CMakeFiles/data.dir/c
 
 CMakeFiles/data.dir/PCA9685/pca9685.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/PCA9685/pca9685.cpp.o: PCA9685/pca9685.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_6)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_7)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/PCA9685/pca9685.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/PCA9685/pca9685.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/PCA9685/pca9685.cpp
 
@@ -189,7 +212,7 @@ CMakeFiles/data.dir/PCA9685/pca9685.cpp.o.provides.build: CMakeFiles/data.dir/PC
 
 CMakeFiles/data.dir/MPU6050/MPU6050.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/MPU6050/MPU6050.cpp.o: MPU6050/MPU6050.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_7)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_8)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/MPU6050/MPU6050.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/MPU6050/MPU6050.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/MPU6050/MPU6050.cpp
 
@@ -212,7 +235,7 @@ CMakeFiles/data.dir/MPU6050/MPU6050.cpp.o.provides.build: CMakeFiles/data.dir/MP
 
 CMakeFiles/data.dir/pevents/pevents.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/pevents/pevents.cpp.o: pevents/pevents.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_8)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_9)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/pevents/pevents.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/pevents/pevents.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/pevents/pevents.cpp
 
@@ -235,7 +258,7 @@ CMakeFiles/data.dir/pevents/pevents.cpp.o.provides.build: CMakeFiles/data.dir/pe
 
 CMakeFiles/data.dir/I2C/i2c.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/I2C/i2c.cpp.o: I2C/i2c.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_9)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_10)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/I2C/i2c.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/I2C/i2c.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/I2C/i2c.cpp
 
@@ -258,7 +281,7 @@ CMakeFiles/data.dir/I2C/i2c.cpp.o.provides.build: CMakeFiles/data.dir/I2C/i2c.cp
 
 CMakeFiles/data.dir/threads/keyboard_thread.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/threads/keyboard_thread.cpp.o: threads/keyboard_thread.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_10)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_11)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/threads/keyboard_thread.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/threads/keyboard_thread.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/threads/keyboard_thread.cpp
 
@@ -281,7 +304,7 @@ CMakeFiles/data.dir/threads/keyboard_thread.cpp.o.provides.build: CMakeFiles/dat
 
 CMakeFiles/data.dir/threads/mpu_thread.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/threads/mpu_thread.cpp.o: threads/mpu_thread.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_11)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_12)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/threads/mpu_thread.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/threads/mpu_thread.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/threads/mpu_thread.cpp
 
@@ -304,7 +327,7 @@ CMakeFiles/data.dir/threads/mpu_thread.cpp.o.provides.build: CMakeFiles/data.dir
 
 CMakeFiles/data.dir/threads/print_thread.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/threads/print_thread.cpp.o: threads/print_thread.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_12)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_13)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/threads/print_thread.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/threads/print_thread.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/threads/print_thread.cpp
 
@@ -327,7 +350,7 @@ CMakeFiles/data.dir/threads/print_thread.cpp.o.provides.build: CMakeFiles/data.d
 
 CMakeFiles/data.dir/threads/pca_thread.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/threads/pca_thread.cpp.o: threads/pca_thread.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_13)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_14)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/threads/pca_thread.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/threads/pca_thread.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/threads/pca_thread.cpp
 
@@ -350,7 +373,7 @@ CMakeFiles/data.dir/threads/pca_thread.cpp.o.provides.build: CMakeFiles/data.dir
 
 CMakeFiles/data.dir/quad_threads.cpp.o: CMakeFiles/data.dir/flags.make
 CMakeFiles/data.dir/quad_threads.cpp.o: quad_threads.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_14)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/sahabi/AGNC/Quad/multithreaded/CMakeFiles $(CMAKE_PROGRESS_15)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/data.dir/quad_threads.cpp.o"
 	/usr/bin/arm-linux-gnueabi-g++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/data.dir/quad_threads.cpp.o -c /home/sahabi/AGNC/Quad/multithreaded/quad_threads.cpp
 
@@ -373,6 +396,7 @@ CMakeFiles/data.dir/quad_threads.cpp.o.provides.build: CMakeFiles/data.dir/quad_
 
 # Object files for target data
 data_OBJECTS = \
+"CMakeFiles/data.dir/kalman.cpp.o" \
 "CMakeFiles/data.dir/control/MathFuncs.cpp.o" \
 "CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o" \
 "CMakeFiles/data.dir/control/AttitudeControl.cpp.o" \
@@ -391,6 +415,7 @@ data_OBJECTS = \
 # External object files for target data
 data_EXTERNAL_OBJECTS =
 
+data: CMakeFiles/data.dir/kalman.cpp.o
 data: CMakeFiles/data.dir/control/MathFuncs.cpp.o
 data: CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o
 data: CMakeFiles/data.dir/control/AttitudeControl.cpp.o
@@ -414,6 +439,7 @@ data: CMakeFiles/data.dir/link.txt
 CMakeFiles/data.dir/build: data
 .PHONY : CMakeFiles/data.dir/build
 
+CMakeFiles/data.dir/requires: CMakeFiles/data.dir/kalman.cpp.o.requires
 CMakeFiles/data.dir/requires: CMakeFiles/data.dir/control/MathFuncs.cpp.o.requires
 CMakeFiles/data.dir/requires: CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o.requires
 CMakeFiles/data.dir/requires: CMakeFiles/data.dir/control/AttitudeControl.cpp.o.requires

@@ -1,4 +1,5 @@
 FILE(REMOVE_RECURSE
+  "CMakeFiles/data.dir/kalman.cpp.o"
   "CMakeFiles/data.dir/control/MathFuncs.cpp.o"
   "CMakeFiles/data.dir/control/MatricesAndVectors.cpp.o"
   "CMakeFiles/data.dir/control/AttitudeControl.cpp.o"

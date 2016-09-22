@@ -11,12 +11,15 @@ MatrixXd Q;
 MatrixXd R;
 MatrixXd A(9,9);
 MatrixXd H(3,9);
+MatrixXd H_v(3,9);
 MatrixXd x_prd;
 MatrixXd p_prd;
 MatrixXd S;
 MatrixXd B;
 MatrixXd klm_gain;
 MatrixXd y;
+MatrixXd v;
+MatrixXd result(6,1);
 
 void kalman_init()
 {
@@ -40,9 +43,23 @@ void kalman_init()
        0,  0,  0,  0,  0,  0,         0,         1,         0,
        0,  0,  0,  0,  0,  0,         0,         0,         1;
 
+  p_est << 0.2,    0,    0,  0,  0,  0,  0,  0,  0,
+             0,  0.2,    0,  0,  0,  0,  0,  0,  0,
+             0,    0,  0.2,  0,  0,  0,  0,  0,  0,
+             0,    0,    0,  0,  0,  0,  0,  0,  0,
+             0,    0,    0,  0,  0,  0,  0,  0,  0,
+             0,    0,    0,  0,  0,  0,  0,  0,  0,
+             0,    0,    0,  0,  0,  0,  0,  0,  0,
+             0,    0,    0,  0,  0,  0,  0,  0,  0,
+             0,    0,    0,  0,  0,  0,  0,  0,  0;
+
   H << 1,  0,  0,  0,  0,  0,  0,  0,  0,
        0,  1,  0,  0,  0,  0,  0,  0,  0,
        0,  0,  1,  0,  0,  0,  0,  0,  0;
+
+  H_v << 0,  0,  0,  1,  0,  0,  0,  0,  0,
+         0,  0,  0,  0,  1,  0,  0,  0,  0,
+         0,  0,  0,  0,  0,  1,  0,  0,  0;
 
 }
 
@@ -69,20 +86,27 @@ MatrixXd kalman(MatrixXd z)
 
   y = H * x_est; 
 
-  return y;
+  v = H_v * x_est;
+
+  result << y,
+            v;
+
+  //std::cout << result << std::endl;
+
+  return result;
 }
 
-int main()
-{
+// int main()
+// {
 
-	kalman_init();
+// 	kalman_init();
 
-	MatrixXd z(3,1);   // measurement vector
+// 	MatrixXd z(3,1);   // measurement vector
 
-	z << 1,
-	     1,
-	     1;
+// 	z << 1,
+// 	     1,
+// 	     1;
 
-	std::cout << kalman(z) << std::endl;
+// 	std::cout << kalman(z) << std::endl;
 
-}
+// }

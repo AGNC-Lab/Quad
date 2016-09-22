@@ -303,6 +303,30 @@ control/QuatRotEuler.cpp.s:
 	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/control/QuatRotEuler.cpp.s
 .PHONY : control/QuatRotEuler.cpp.s
 
+kalman.o: kalman.cpp.o
+.PHONY : kalman.o
+
+# target to build an object file
+kalman.cpp.o:
+	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/kalman.cpp.o
+.PHONY : kalman.cpp.o
+
+kalman.i: kalman.cpp.i
+.PHONY : kalman.i
+
+# target to preprocess a source file
+kalman.cpp.i:
+	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/kalman.cpp.i
+.PHONY : kalman.cpp.i
+
+kalman.s: kalman.cpp.s
+.PHONY : kalman.s
+
+# target to generate assembly for a file
+kalman.cpp.s:
+	$(MAKE) -f CMakeFiles/data.dir/build.make CMakeFiles/data.dir/kalman.cpp.s
+.PHONY : kalman.cpp.s
+
 pevents/pevents.o: pevents/pevents.cpp.o
 .PHONY : pevents/pevents.o
 
@@ -480,6 +504,9 @@ help:
 	@echo "... control/QuatRotEuler.o"
 	@echo "... control/QuatRotEuler.i"
 	@echo "... control/QuatRotEuler.s"
+	@echo "... kalman.o"
+	@echo "... kalman.i"
+	@echo "... kalman.s"
 	@echo "... pevents/pevents.o"
 	@echo "... pevents/pevents.i"
 	@echo "... pevents/pevents.s"
