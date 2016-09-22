@@ -6,5 +6,6 @@ void kalman_init();
 
 Eigen::MatrixXd kalman(Eigen::MatrixXd z);
 
+Eigen::MatrixXd pest();
 
 #endif

@@ -113,6 +113,8 @@ threads/mpu_thread.h
 /home/sahabi/AGNC/Quad/multithreaded/threads/mpu_thread.h
 kalman.h
 /home/sahabi/AGNC/Quad/multithreaded/kalman.h
+cmath
+-
 
 /home/sahabi/AGNC/Quad/multithreaded/rosserial/duration.cpp
 math.h

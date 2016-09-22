@@ -34,7 +34,7 @@
 //add a header file for kalman
 #include "kalman.h"
 //#include "rosserial/ros.h"
-
+#include <cmath> 
 //using std::cin;
 using namespace neosmart;
 using namespace std;
@@ -59,7 +59,7 @@ using std::ostringstream;
 #define TERMINATE 6
 
 int currentState = INITIALIZING;
-
+int counter_k = 0;
 ros::NodeHandle  _nh;  
 
 neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_KeyESC;
@@ -191,14 +191,21 @@ void handle_pose_tform_msg(const geometry_msgs::TransformStamped& msg){
 
     Eigen::MatrixXd z(3,1);   // measurement vector
 
+    Eigen::MatrixXd p_est_hist;
+
+    Eigen::MatrixXd p_est_current;
+
 	z << msg.transform.translation.x,
 	     -msg.transform.translation.y,
 	     -msg.transform.translation.z;
-	posRef_nofilter.v[0] = msg.transform.translation.x;
-	posRef_nofilter.v[1] = msg.transform.translation.y;
-	posRef_nofilter.v[2] = msg.transform.translation.z;
+
+	p_est_hist = pest();
 
 	Eigen::MatrixXd kalman_state =  kalman(z);
+
+	counter_k++;
+
+	p_est_current = pest();
 
 	pthread_mutex_lock(&posRef_Mutex);	
 
@@ -209,6 +216,14 @@ void handle_pose_tform_msg(const geometry_msgs::TransformStamped& msg){
  	velRef.v[0] = kalman_state(3,0);// - posRef_nofilter.v[0];
   	velRef.v[1] = kalman_state(4,0);// - posRef_nofilter.v[1];
   	velRef.v[2] = kalman_state(5,0);// - posRef_nofilter.v[2];
+
+  	if (std::abs(p_est_hist.norm() - p_est_current.norm()) < 1)//if (std::abs(p_est_hist - p_est_current) < 1)
+  	{
+
+  		printf("Counter: %d\n",counter_k);
+  		printf("Q Value: %d\n",kalman_state(6,0));
+  		std::cout << p_est_current << std::endl;
+  	}
 
 
   // _v_est = (_p_est - _p_est_prev)/(t - ts_last_pose);
@@ -223,7 +238,7 @@ void handle_pose_tform_msg(const geometry_msgs::TransformStamped& msg){
                    //1.0-2.0*(_q_est.y()*_q_est.y()+_q_est.z()*_q_est.z()));
 
   // _p_est_prev = _p_est;
-  	//PrintVec3(posRef, "posRef");
+  	PrintVec3(posRef, "posRef");
   	PrintVec3(velRef, "velRef");
 
   	pthread_mutex_unlock(&posRef_Mutex);	

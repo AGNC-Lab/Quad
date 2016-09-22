@@ -4,9 +4,11 @@ using Eigen::MatrixXd;
 
 float dt;
 float vicon_c;
+float q_c;
 
 MatrixXd x_est;
-MatrixXd p_est;
+MatrixXd p_est(9,9);
+MatrixXd p_pos(9,9);
 MatrixXd Q;           
 MatrixXd R;
 MatrixXd A(9,9);
@@ -19,18 +21,19 @@ MatrixXd B;
 MatrixXd klm_gain;
 MatrixXd y;
 MatrixXd v;
-MatrixXd result(6,1);
+MatrixXd result(7,1);
 
 void kalman_init()
 {
 
 	dt = 0.01;   // 100 Hz
-	vicon_c = 1; // vicon error
+  q_c = 0.001;
+	vicon_c = 0.0001; // estimated vicon error
 
 	x_est = MatrixXd::Zero(9,1);
-  p_est = MatrixXd::Zero(9,9);
+  //p_est = MatrixXd::Zero(9,9);
 
-	Q = MatrixXd::Identity(9,9);           // process noise
+	Q = q_c * MatrixXd::Identity(9,9);           // process noise
 	R = vicon_c * MatrixXd::Identity(3,3); // Measurement error
 
   A << 1,  0,  0, dt,  0,  0, dt*dt/2.0,         0,         0,
@@ -43,15 +46,25 @@ void kalman_init()
        0,  0,  0,  0,  0,  0,         0,         1,         0,
        0,  0,  0,  0,  0,  0,         0,         0,         1;
 
-  p_est << 0.2,    0,    0,  0,  0,  0,  0,  0,  0,
-             0,  0.2,    0,  0,  0,  0,  0,  0,  0,
-             0,    0,  0.2,  0,  0,  0,  0,  0,  0,
-             0,    0,    0,  0,  0,  0,  0,  0,  0,
-             0,    0,    0,  0,  0,  0,  0,  0,  0,
-             0,    0,    0,  0,  0,  0,  0,  0,  0,
-             0,    0,    0,  0,  0,  0,  0,  0,  0,
-             0,    0,    0,  0,  0,  0,  0,  0,  0,
-             0,    0,    0,  0,  0,  0,  0,  0,  0;
+  p_est <<   1,    0,    0,       0,       0,       0,      0,       0,       0,
+             0,    1,    0,       0,       0,       0,      0,       0,       0,
+             0,    0,    1,       0,       0,       0,      0,       0,       0,
+             0,    0,    0,  0.0001,       0,       0,      0,       0,       0,
+             0,    0,    0,       0,  0.0001,       0,      0,       0,       0,
+             0,    0,    0,       0,       0,  0.0001,      0,       0,       0,
+             0,    0,    0,       0,       0,       0, 0.0001,       0,       0,
+             0,    0,    0,       0,       0,       0,      0,  0.0001,       0,
+             0,    0,    0,       0,       0,       0,      0,       0,  0.0001;
+
+  // p_pos << 1,    0,    0,  0.01,  0,  0,  0,  0,  0,
+  //            0,  1,    0,  0,  0.01,  0,  0,  0,  0,
+  //            0,    0,  1,  0,  0,  0.01,  0,  0,  0,
+  //            0.01,    0,    0,  0.0000,  0,  0,  0,  0,  0,
+  //            0,    0.01,    0,       0,  0.0000, 0,  0,  0,  0,
+  //            0,    0,    0.01,       0,       0,  0.0000,  0,  0,  0,
+  //            0,    0,    0,  0,  0,  0,  0.0000,  0,  0,
+  //            0,    0,    0,  0,  0,  0,  0,  0.0000,  0,
+  //            0,    0,    0,  0,  0,  0,  0,  0,  0.0000;
 
   H << 1,  0,  0,  0,  0,  0,  0,  0,  0,
        0,  1,  0,  0,  0,  0,  0,  0,  0,
@@ -80,7 +93,7 @@ MatrixXd kalman(MatrixXd z)
 
   x_est = x_prd + klm_gain * (z - H * x_prd);
 
-  p_est = p_prd - klm_gain * H * p_prd;
+  p_est = p_prd - klm_gain * H * p_prd;// + p_pos;
 
 // Computing Measurements
 
@@ -89,11 +102,18 @@ MatrixXd kalman(MatrixXd z)
   v = H_v * x_est;
 
   result << y,
-            v;
+            v,
+            q_c;
 
-  //std::cout << result << std::endl;
+  //std::cout << p_est << std::endl;
 
   return result;
+}
+
+MatrixXd pest()
+{
+
+  return p_est;
 }
 
 // int main()
