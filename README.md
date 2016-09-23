@@ -1,2 +1,2 @@
 # Quad
-Quadrotor source codes for AGNC Lab
+Quadrotor flight software source code for AGNC Lab
