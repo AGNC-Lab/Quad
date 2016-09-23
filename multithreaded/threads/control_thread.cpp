@@ -43,7 +43,7 @@ extern Vec4 Contr_Input;
 extern Vec3 IMU_Data_RPY;
 extern Vec4 IMU_Data_Quat;
 extern Vec3 IMU_Data_Accel;
-extern Vec3 IMU_Data_Vel;
+extern Vec3 IMU_Data_AngVel;
 extern PID_3DOF PID_angVel; 	//Angular velocity PID
 extern PID_3DOF PID_att;		//Attitude PID
 
@@ -51,7 +51,7 @@ extern PID_3DOF PID_att;		//Attitude PID
 extern pthread_mutex_t Contr_Input_Mutex;
 
 
-extern float yaw_ctr_pos, yaw_ctr_neg;
+//extern float yaw_ctr_pos, yaw_ctr_neg;
 extern float Motor_Speed;
 
 extern int threadCount;	
@@ -73,7 +73,7 @@ void *Control_Timer(void *threadID){
 
 		//Check system state
 		pthread_mutex_lock(&stateMachine_Mutex);
-		localCurrentState = currentState;
+			localCurrentState = currentState;
 		pthread_mutex_unlock(&stateMachine_Mutex);
 
 		//check if system should be terminated
@@ -137,7 +137,7 @@ void *Control_Task(void *threadID){
 
 		//Check system state
 		pthread_mutex_lock(&stateMachine_Mutex);
-		localCurrentState = currentState;
+			localCurrentState = currentState;
 		pthread_mutex_unlock(&stateMachine_Mutex);
 
 		//check if system should be terminated
@@ -145,48 +145,28 @@ void *Control_Task(void *threadID){
 			break;
 		}
 
-		//_nh.spinOnce();
-
-		pthread_mutex_unlock(&attRef_Mutex);
-
-		if (yaw_ctr_neg < 0) {
-			attRef.v[2] -= yaw_Inc;
-			//if ((attRef.v[2] - yaw_Inc) < -PI) {
-			//	attRef.v[2] += 2*PI;
-			//}
-		}								//yaw
-		if (yaw_ctr_pos < 0) {
-			attRef.v[2] += yaw_Inc;
-			//if ((attRef.v[2] + yaw_Inc) > PI) {
-			//	attRef.v[2] -= 2*PI;
-			//}
-		}
-		//printf("yaw_ref = %-7f \n", attRef.v[2]*180/PI);
-		pthread_mutex_unlock(&attRef_Mutex);
-
 		//Throttle
 	    pthread_mutex_lock(&Motor_Speed_Mutex);
-		localMotor_Speed = Motor_Speed;
+			localMotor_Speed = Motor_Speed;
 		pthread_mutex_unlock(&Motor_Speed_Mutex);
 
 		//Grab attitude estimation
 		pthread_mutex_lock(&IMU_Mutex);
-		IMU_localData_Quat = IMU_Data_Quat;
-		IMU_localData_Vel = IMU_Data_Vel;
-		IMU_localData_RPY = IMU_Data_RPY;
+			IMU_localData_Quat = IMU_Data_Quat;
+			IMU_localData_Vel = IMU_Data_AngVel;
+			IMU_localData_RPY = IMU_Data_RPY;
 		pthread_mutex_unlock(&IMU_Mutex);
 
-		//Grab attitude reference
-		pthread_mutex_lock(&attRef_Mutex);
-		if (localMotor_Speed <= 0) {
-	    	attRef.v[2] = IMU_localData_RPY.v[2];
-	    }
-
-		localAttRef = attRef;
+		//Grab attitude reference (set yaw to measured yaw if quad isnt flying)
+		pthread_mutex_lock(&attRef_Mutex);	
+			if (localMotor_Speed <= 0) {
+		    	attRef.v[2] = IMU_localData_RPY.v[2];
+		    }
+		    localAttRef = attRef;
 	    pthread_mutex_unlock(&attRef_Mutex);
 
 
-	    Rdes = RPY2Rot(attRef.v[0], attRef.v[1], attRef.v[2]);
+	    Rdes = RPY2Rot(localAttRef.v[0], localAttRef.v[1], localAttRef.v[2]);
 	    Rbw = Quat2rot(IMU_localData_Quat);
 
 	    //Calculate attitude error
@@ -197,43 +177,41 @@ void *Control_Task(void *threadID){
 
 		//Update PID
 		pthread_mutex_lock(&PID_Mutex);
-		if(!isNanVec3(error_att)){
-			updateErrorPID(&PID_att, error_att, zeros, dt);
-		}
+			if(!isNanVec3(error_att)){
+				updateErrorPID(&PID_att, error_att, zeros, dt);
+			}
 
-		//Dont integrate integrator if not in minimum thrust
-		if (localMotor_Speed < takeOffThrust){
-			resetIntegralErrorPID(&PID_att);
-		}
-		
-		//Reference for inner loop (angular velocity control)
-		wDes = outputPID(PID_att);
+			//Dont integrate integrator if not in minimum thrust
+			if (localMotor_Speed < takeOffThrust){
+				resetIntegralErrorPID(&PID_att);
+			}
+			
+			//Reference for inner loop (angular velocity control)
+			wDes = outputPID(PID_att);
 
-		//Calculate angular velocity error and update PID
-		error_att_vel = Subtract3x1Vec(wDes, IMU_localData_Vel);
-		updateErrorPID(&PID_angVel, error_att_vel, zeros, dt);
+			//Calculate angular velocity error and update PID
+			error_att_vel = Subtract3x1Vec(wDes, IMU_localData_Vel);
+			updateErrorPID(&PID_angVel, error_att_vel, zeros, dt);
 
-		if (localMotor_Speed < takeOffThrust){
-			resetIntegralErrorPID(&PID_angVel);
-		}
+			if (localMotor_Speed < takeOffThrust){
+				resetIntegralErrorPID(&PID_angVel);
+			}
 
-		inputTorque = outputPID(PID_angVel);
+			inputTorque = outputPID(PID_angVel);
 		pthread_mutex_unlock(&PID_Mutex);
 
 		//Distribute power to motors
 		pthread_mutex_lock(&Contr_Input_Mutex);
-		Contr_Input.v[0] = localMotor_Speed;
-		Contr_Input.v[1] = inputTorque.v[0];
-		Contr_Input.v[2] = inputTorque.v[1];
-		Contr_Input.v[3] = inputTorque.v[2];
+			Contr_Input.v[0] = localMotor_Speed;
+			Contr_Input.v[1] = inputTorque.v[0];
+			Contr_Input.v[2] = inputTorque.v[1];
+			Contr_Input.v[3] = inputTorque.v[2];
+			PCA_localData = u2pwmXshape(Contr_Input);
 		pthread_mutex_unlock(&Contr_Input_Mutex);
-
-		PCA_localData = u2pwmXshape(Contr_Input);
-
 
 		//Send motor commands
 		pthread_mutex_lock(&PCA_Mutex);
-		PCA_Data = PCA_localData;
+			PCA_Data = PCA_localData;
 		pthread_mutex_unlock(&PCA_Mutex);
 
 

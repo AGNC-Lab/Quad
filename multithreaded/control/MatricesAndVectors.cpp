@@ -140,7 +140,7 @@ void PrintMat4x4(Mat4x4 Mat){
 }
 
 /* Print 3x1 vectors for debugging*/
-void PrintVec3(Vec3 V, char *Text){
+void PrintVec3(Vec3 V, char const *Text){
 	printf("%s = \t", Text);
 	for (int i = 0; i < 3; i++){
 		printf("%f \t", V.v[i]);
@@ -149,7 +149,7 @@ void PrintVec3(Vec3 V, char *Text){
 }
 
 /* Print 4x1 vectors for debugging*/
-void PrintVec4(Vec4 V, char *Text){
+void PrintVec4(Vec4 V, char const *Text){
 	printf("%s = \t", Text);
 	for (int i = 0; i < 4; i++){
 		printf("%f \t", V.v[i]);

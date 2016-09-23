@@ -1,31 +1,13 @@
 
 #include "threads/keyboard_thread.h"
 
-#include "pevents/pevents.h"
-#include <pthread.h>
 
-#include <cstdio>
-
-
-using namespace neosmart;
-
-extern pthread_mutex_t stateMachine_Mutex;
-extern neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_KeyESC;
-extern neosmart_event_t e_Motor_Up, e_Motor_Down, e_Motor_Kill;
-extern neosmart_event_t e_Roll_Pos, e_Roll_Neg, e_Pitch_pos, e_Pitch_Neg;
-extern int threadCount;
-extern int currentState;
-
-extern void updatePar();
-extern char getch();
-
-#define TERMINATE 6
 
 void *KeyboardTask(void *threadID)
 {
 	char ch;	//Char for storing keystroke
 	printf("KeyboardTask has started!\n");
-	int Key1 = 0, Key2 = 0, Key3 = 0, Key4 = 0, Key5 = 0;		//Values for key states (0 or 1)
+	int Key1 = 0, Key2 = 0, Key3 = 0, Key4 = 0, Key5 = 0, Key6 = 0, Key7 = 0, Key8 = 0, Key9 = 0;//Values for key states (0 or 1)
 	int localCurrentState;
 
 	while(1){
@@ -81,6 +63,38 @@ void *KeyboardTask(void *threadID)
 			    ResetEvent(e_Key5);
 			printf("Key5 State: %d\n",Key5);
 		}
+		else if (ch == '6'){
+			Key6 = (Key6 + 1) % 2;
+			if (Key6 == 1)
+			    SetEvent(e_Key6);
+			else
+			    ResetEvent(e_Key6);
+			printf("Key6 State: %d\n",Key6);
+		}
+		else if (ch == '7'){
+			Key7 = (Key7 + 1) % 2;
+			if (Key7 == 1)
+			    SetEvent(e_Key7);
+			else
+			    ResetEvent(e_Key7);
+			printf("Key7 State: %d\n",Key7);
+		}
+		else if (ch == '8'){
+			Key8 = (Key8 + 1) % 2;
+			if (Key8 == 1)
+			    SetEvent(e_Key8);
+			else
+			    ResetEvent(e_Key8);
+			printf("Key8 State: %d\n",Key8);
+		}
+		else if (ch == '9'){
+			Key9 = (Key9 + 1) % 2;
+			if (Key9 == 1)
+			    SetEvent(e_Key9);
+			else
+			    ResetEvent(e_Key9);
+			printf("Key9 State: %d\n",Key9);
+		}
 		else if (ch == '0'){
 		    updatePar();
 		    printf("Updated parameters! \n");
@@ -96,22 +110,6 @@ void *KeyboardTask(void *threadID)
 		else if (ch == 'k') { //the 'k' key
 		    //motor kill
 		    SetEvent(e_Motor_Kill);
-		}
-		else if (ch == 't') { //the 't' key
-		    //motor kill
-		    SetEvent(e_Pitch_pos);
-		}
-		else if (ch == 'g') { //the 'g' key
-		    //motor kill
-		    SetEvent(e_Pitch_Neg);
-		}
-		else if (ch == 'h') { //the 'h' key
-		    //motor kill
-		    SetEvent(e_Roll_Pos);
-		}
-		else if (ch == 'f') { //the 'f' key
-		    //motor kill
-		    SetEvent(e_Roll_Neg);
 		}
 		else if (ch == 27){	//ESC character
 			SetEvent(e_KeyESC);

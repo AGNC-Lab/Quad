@@ -56,10 +56,10 @@ void PrintMat3x3(Mat3x3 Mat);
 void PrintMat4x4(Mat4x4 Mat);
 
 /* Print 3x1 vectors for debugging*/
-void PrintVec3(Vec3 V, char *Text);
+void PrintVec3(Vec3 V, char const *Text);
 
 /* Print 4x1 vectors for debugging*/
-void PrintVec4(Vec4 V, char *Text);
+void PrintVec4(Vec4 V, char const *Text);
 
 // Multiply 3x3 matrix by a 3x1 vectos: V_out = M*V
 Vec3 MultiplyMat3x3Vec3(Mat3x3 Mat, Vec3 V);

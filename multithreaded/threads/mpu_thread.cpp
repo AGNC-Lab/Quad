@@ -21,7 +21,7 @@ extern pthread_mutex_t IMU_Mutex;	//protect IMU data
 extern Vec3 IMU_Data_RPY;
 extern Vec4 IMU_Data_Quat;
 extern Vec3 IMU_Data_Accel;
-extern Vec3 IMU_Data_Vel;
+extern Vec3 IMU_Data_AngVel;
 
 extern neosmart_event_t e_IMU_trigger;
 extern neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
@@ -126,9 +126,9 @@ void *IMU_Task(void *threadID){
 		IMU_Data_Accel.v[0] = (float)aa.x;
 		IMU_Data_Accel.v[1] = (float)aa.y;
 		IMU_Data_Accel.v[2] = (float)aa.z;
-		IMU_Data_Vel.v[1] = ((float)gx/131 - Vel_Cal_X)*PI/180;
-		IMU_Data_Vel.v[0] = ((float)gy/131 - Vel_Cal_Y)*PI/180;
-		IMU_Data_Vel.v[2] = -((float)gz/131 - Vel_Cal_Z)*PI/180;
+		IMU_Data_AngVel.v[1] = ((float)gx/131 - Vel_Cal_X)*PI/180;
+		IMU_Data_AngVel.v[0] = ((float)gy/131 - Vel_Cal_Y)*PI/180;
+		IMU_Data_AngVel.v[2] = -((float)gz/131 - Vel_Cal_Z)*PI/180;
 		pthread_mutex_unlock(&IMU_Mutex);
 	}
 	

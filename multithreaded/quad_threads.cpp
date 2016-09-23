@@ -22,15 +22,17 @@
 #include <stdlib.h>
 #include <sstream>
 #include "rosserial/ros.h"
-#include "rosserial/std_msgs/Float32MultiArray.h"
+//#include "rosserial/std_msgs/Float32MultiArray.h"
 #include "rosserial/sensor_msgs/Joy.h"
 #include "rosserial/geometry_msgs/TransformStamped.h"
-#include "rosserial/geometry_msgs/PoseStamped.h"
+#include "rosserial/qcontrol_defs/PVA.h"
 #include "threads/keyboard_thread.h"
-//#include "threads/overo.h"
+#include "threads/control_thread.h"
 #include "threads/pca_thread.h"
 #include "threads/print_thread.h"
 #include "threads/mpu_thread.h"
+//#include "threads/stateMachine.h"
+//#include "threads/overo.h"
 //add a header file for kalman
 #include "kalman.h"
 //#include "rosserial/ros.h"
@@ -46,7 +48,6 @@ using std::ostringstream;
 #define Motor_Speed_Max 20.0
 #define Motor_Speed_Min 0.0
 #define Motor_Speed_Inc 2.0
-#define attRef_Inc 10.0*PI/180 //Increments for attitude reference in degrees
 #define yaw_Inc PI/720
 
 //Define system states
@@ -59,12 +60,14 @@ using std::ostringstream;
 #define TERMINATE 6
 
 int currentState = INITIALIZING;
-int counter_k = 0;
-ros::NodeHandle  _nh;  
 
-neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_KeyESC;
+//Ros handle and IP variable
+ros::NodeHandle  _nh;  
+char *rosSrvrIp;
+qcontrol_defs::PVA PVA_quadVicon;
+
+neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_Key6, e_Key7, e_Key8, e_Key9, e_KeyESC;
 neosmart_event_t e_Motor_Up, e_Motor_Down, e_Motor_Kill;
-neosmart_event_t e_Roll_Pos, e_Roll_Neg, e_Pitch_pos, e_Pitch_Neg;
 neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
 neosmart_event_t e_IMU_trigger;
 neosmart_event_t e_PCA_trigger;
@@ -74,19 +77,16 @@ pthread_mutex_t IMU_Mutex;	//protect IMU data
 pthread_mutex_t PCA_Mutex;
 pthread_mutex_t Motor_Speed_Mutex;
 pthread_mutex_t attRef_Mutex;
-pthread_mutex_t posRef_Mutex;
 pthread_mutex_t Contr_Input_Mutex;
 pthread_mutex_t PID_Mutex;
 pthread_mutex_t stateMachine_Mutex;
+pthread_mutex_t PVA_Vicon_Mutex;
 float Motor_Speed = 0;
 Vec3 IMU_Data_RPY;
 Vec4 IMU_Data_Quat;
 Vec3 IMU_Data_Accel;
-Vec3 IMU_Data_Vel;
+Vec3 IMU_Data_AngVel;
 Vec3 attRef;
-Vec3 posRef;
-Vec3 velRef;
-Vec3 posRef_nofilter;
 Vec4 Contr_Input;
 Vec4 PCA_Data;
 PID_3DOF PID_angVel; 	//Angular velocity PID
@@ -97,14 +97,93 @@ float yaw_ctr_pos, yaw_ctr_neg;
 
 I2C i2c('3'); 
 
+void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
+	pthread_mutex_lock(&attRef_Mutex);	
+	attRef.v[0] = -msg.axes[3]*PI/6; //roll
+	attRef.v[1] = msg.axes[4]*PI/6; //pitch
+	yaw_ctr_pos = msg.axes[2];
+	yaw_ctr_neg = msg.axes[5];
+	if (yaw_ctr_neg < 0) {
+		attRef.v[2] -= yaw_Inc;
+	}								//yaw
+	if (yaw_ctr_pos < 0) {
+		attRef.v[2] += yaw_Inc;
+	}
+	pthread_mutex_unlock(&attRef_Mutex);
+	//PrintVec3(attRef, "attRef");
 
-//	MatrixXd z(3,1);   // measurement vector
+	pthread_mutex_lock(&Motor_Speed_Mutex);
+	Motor_Speed = msg.axes[1] * 20;
+	pthread_mutex_unlock(&Motor_Speed_Mutex);
 
-//	z << 1,
-//	     1,
-//	     1;
+}
 
-//	std::cout << kalman(z) << std::endl;
+void handle_Vicon(const geometry_msgs::TransformStamped& msg){
+
+    Eigen::MatrixXd z(3,1);   // measurement vector
+
+    Eigen::MatrixXd p_est_hist;
+
+    Eigen::MatrixXd p_est_current;
+
+	z << msg.transform.translation.x,
+	     -msg.transform.translation.y,
+	     -msg.transform.translation.z;
+
+	p_est_hist = pest();
+
+	Eigen::MatrixXd kalman_state =  kalman(z);
+
+	p_est_current = pest();
+
+	pthread_mutex_lock(&PVA_Vicon_Mutex);	
+
+		PVA_quadVicon.pos.position.x = kalman_state(0,0);
+		PVA_quadVicon.pos.position.y = kalman_state(1,0);
+		PVA_quadVicon.pos.position.z = kalman_state(2,0);
+		PVA_quadVicon.vel.linear.x = kalman_state(3,0);
+		PVA_quadVicon.vel.linear.y = kalman_state(4,0);
+		PVA_quadVicon.vel.linear.z = kalman_state(5,0);
+
+		PVA_quadVicon.pos.orientation.w = msg.transform.rotation.w;
+		PVA_quadVicon.pos.orientation.x = msg.transform.rotation.x;
+		PVA_quadVicon.pos.orientation.y = msg.transform.rotation.y;
+		PVA_quadVicon.pos.orientation.z = msg.transform.rotation.z;
+
+  	pthread_mutex_unlock(&PVA_Vicon_Mutex);	
+
+  	//   	if (std::abs(p_est_hist.norm() - p_est_current.norm()) < 1)//if (std::abs(p_est_hist - p_est_current) < 1)
+  	// {
+
+  	// 	printf("Q Value: %f\n",kalman_state(6,0));
+  	// 	std::cout << p_est_current << std::endl;
+  	// }
+  //	PrintVec3(posRef, "posRef");
+  //	PrintVec3(velRef, "velRef");
+
+  }
+
+void *rosSpinTask(void *treadID){
+	int SamplingTime = 5;	//Sampling time in milliseconds
+
+	_nh.initNode(rosSrvrIp);
+
+	//ros joy subscriber
+	ros::Subscriber<sensor_msgs::Joy> sub_mp_joy("/joy", handle_mp_joy_msg);
+	_nh.subscribe(sub_mp_joy);	
+
+  	ros::Subscriber<geometry_msgs::TransformStamped> sub_tform("/vicon/Niki/Niki", handle_Vicon);
+  	_nh.subscribe(sub_tform);
+
+  	while(1){
+		WaitForEvent(e_Timeout,SamplingTime);
+		_nh.spinOnce();
+  	}
+}
+
+
+
+
 void *StateMachineTask(void *threadID){
 
 	printf("Initializing system... \n");
@@ -169,81 +248,6 @@ void *StateMachineTask(void *threadID){
 	threadCount -= 1;
 	pthread_exit(NULL);
 }
-
-void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
-	pthread_mutex_lock(&attRef_Mutex);	
-	attRef.v[0] = -msg.axes[3]*PI/6; //roll
-	attRef.v[1] = msg.axes[4]*PI/6; //pitch
-	yaw_ctr_pos = msg.axes[2];
-	yaw_ctr_neg = msg.axes[5];
-	//PrintVec3(attRef, "attRef");
-	pthread_mutex_unlock(&attRef_Mutex);
-
-	pthread_mutex_lock(&Motor_Speed_Mutex);
-	Motor_Speed = msg.axes[1] * 20;
-	//printf("Motor_Speed = %-7f \n", Motor_Speed);
-	pthread_mutex_unlock(&Motor_Speed_Mutex);
-
-
-}
-
-void handle_pose_tform_msg(const geometry_msgs::TransformStamped& msg){
-
-    Eigen::MatrixXd z(3,1);   // measurement vector
-
-    Eigen::MatrixXd p_est_hist;
-
-    Eigen::MatrixXd p_est_current;
-
-	z << msg.transform.translation.x,
-	     -msg.transform.translation.y,
-	     -msg.transform.translation.z;
-
-	p_est_hist = pest();
-
-	Eigen::MatrixXd kalman_state =  kalman(z);
-
-	counter_k++;
-
-	p_est_current = pest();
-
-	pthread_mutex_lock(&posRef_Mutex);	
-
- 	posRef.v[0] = kalman_state(0,0);// - posRef_nofilter.v[0];
-  	posRef.v[1] = kalman_state(1,0);// - posRef_nofilter.v[1];
-  	posRef.v[2] = kalman_state(2,0);// - posRef_nofilter.v[2];
-
- 	velRef.v[0] = kalman_state(3,0);// - posRef_nofilter.v[0];
-  	velRef.v[1] = kalman_state(4,0);// - posRef_nofilter.v[1];
-  	velRef.v[2] = kalman_state(5,0);// - posRef_nofilter.v[2];
-
-  	if (std::abs(p_est_hist.norm() - p_est_current.norm()) < 1)//if (std::abs(p_est_hist - p_est_current) < 1)
-  	{
-
-  		printf("Counter: %d\n",counter_k);
-  		printf("Q Value: %d\n",kalman_state(6,0));
-  		std::cout << p_est_current << std::endl;
-  	}
-
-
-  // _v_est = (_p_est - _p_est_prev)/(t - ts_last_pose);
-  // std::cout << _v_est(0) << "\t" << _v_est(1) << "\t" << _v_est(2) << "\n";
-
-  //_q_est.w() = msg.transform.rotation.w;
-  //_q_est.x() = msg.transform.rotation.x;
-  //_q_est.y() = -msg.transform.rotation.y;
-  //_q_est.z() = -msg.transform.rotation.z;
-
-  //_psi_est = atan2(2.0*(_q_est.x()*_q_est.y()+_q_est.w()*_q_est.z()), 
-                   //1.0-2.0*(_q_est.y()*_q_est.y()+_q_est.z()*_q_est.z()));
-
-  // _p_est_prev = _p_est;
-  	PrintVec3(posRef, "posRef");
-  	PrintVec3(velRef, "velRef");
-
-  	pthread_mutex_unlock(&posRef_Mutex);	
-
-  }
 
 //change red light to green after restart
 /*void set_pwm_mux_to_ap() {
@@ -392,187 +396,6 @@ char getch() { //This function allows to capture char without needing to press '
 	return (buf);
 }
 
-void *Control_Timer(void *threadID){
-
-	printf("Control_Timer has started!\n");
-	int SamplingTime = 3;	//Sampling time in milliseconds
-	int localCurrentState;
-
-	while(1){
-		WaitForEvent(e_Timeout,SamplingTime);
-
-		//Check system state
-		pthread_mutex_lock(&stateMachine_Mutex);
-		localCurrentState = currentState;
-		pthread_mutex_unlock(&stateMachine_Mutex);
-
-		//check if system should be terminated
-		if(localCurrentState == TERMINATE){
-			break;
-		}
-
-		SetEvent(e_Control_trigger);
-	}
-	
-	printf("Control_Timer stopping...\n");
-	//Shutdown here
-	threadCount -= 1;
-	pthread_exit(NULL);
-}
-
-
-void *Control_Task(void *threadID){
-	printf("Control_Task has started!\n");
-
-	//Initialize PIDs (sets initial errors to zero)
-	pthread_mutex_lock(&PID_Mutex);
-	initializePID(&PID_att);
-	initializePID(&PID_angVel);
-	pthread_mutex_unlock(&PID_Mutex);
-	float dt = 0.003; 			//Sampling time
-	float takeOffThrust = 6; 	//Minimum thrust to take off
-	Vec3 localAttRef;
-
-	//Vectors of zeros
-	Vec3 zeros;
-	zeros.v[0] = 0; zeros.v[1] = 0; zeros.v[2] = 0; 
-
-	Vec4 IMU_localData_Quat;
-	Vec3 IMU_localData_Vel;
-	Vec3 IMU_localData_RPY;
-	Vec3 inputTorque;
-	Vec4 PCA_localData;
-	float localMotor_Speed;
-	int localCurrentState;
-
-
-	Vec3 error_att;
-	Vec3 error_att_vel;
-
-	Vec3 wDes;
-	Mat3x3 Rdes;
-	Mat3x3 Rbw;
-	
-
-	//Mat3x3 Rdes = RPY2Rot(0,0,0);
-
-	updatePar();
-
-	//PrintMat3x3(Concatenate3Vec3_2_Mat3x3(PID_att.K_p, PID_att.K_d, PID_att.K_i));
-	//PrintMat3x3(Concatenate3Vec3_2_Mat3x3(PID_angVel.K_p, PID_angVel.K_d, PID_angVel.K_i));
-
-	while(1){
-
-		WaitForEvent(e_Control_trigger,500);
-		_nh.spinOnce();
-
-		//Check system state
-		pthread_mutex_lock(&stateMachine_Mutex);
-		localCurrentState = currentState;
-		pthread_mutex_unlock(&stateMachine_Mutex);
-
-		//check if system should be terminated
-		if(localCurrentState == TERMINATE){
-			break;
-		}
-
-		//_nh.spinOnce();
-		pthread_mutex_lock(&attRef_Mutex);
-
-		if (yaw_ctr_neg < 0) {
-			attRef.v[2] -= yaw_Inc;
-			//if ((attRef.v[2] - yaw_Inc) < -PI) {
-			//	attRef.v[2] += 2*PI;
-			//}
-		}								//yaw
-		if (yaw_ctr_pos < 0) {
-			attRef.v[2] += yaw_Inc;
-			//if ((attRef.v[2] + yaw_Inc) > PI) {
-			//	attRef.v[2] -= 2*PI;
-			//}
-		}
-		//printf("yaw_ref = %-7f \n", attRef.v[2]*180/PI);
-		pthread_mutex_unlock(&attRef_Mutex);
-
-		//Throttle
-	    pthread_mutex_lock(&Motor_Speed_Mutex);
-		localMotor_Speed = Motor_Speed;
-		pthread_mutex_unlock(&Motor_Speed_Mutex);
-
-		//Grab attitude estimation
-		pthread_mutex_lock(&IMU_Mutex);
-		IMU_localData_Quat = IMU_Data_Quat;
-		IMU_localData_Vel = IMU_Data_Vel;
-		IMU_localData_RPY = IMU_Data_RPY;
-		pthread_mutex_unlock(&IMU_Mutex);
-
-		//Grab attitude reference
-		pthread_mutex_lock(&attRef_Mutex);
-		if (localMotor_Speed <= 0) {
-	    	attRef.v[2] = IMU_localData_RPY.v[2];
-	    }
-
-		localAttRef = attRef;
-	    pthread_mutex_unlock(&attRef_Mutex);
-
-
-	    Rdes = RPY2Rot(attRef.v[0], attRef.v[1], attRef.v[2]);
-	    Rbw = Quat2rot(IMU_localData_Quat);
-
-	    //Calculate attitude error
-	    error_att = AttitudeErrorVector(Rbw, Rdes);
-	    //PrintVec3(error_att, "error_att"); 
-		//error_att = Subtract3x1Vec(localAttRef, IMU_localData_RPY);
-		//PrintVec3(error_att,"error_att");
-
-		//Update PID
-		pthread_mutex_lock(&PID_Mutex);
-		if(!isNanVec3(error_att)){
-			updateErrorPID(&PID_att, error_att, zeros, dt);
-		}
-
-		//Dont integrate integrator if not in minimum thrust
-		if (localMotor_Speed < takeOffThrust){
-			resetIntegralErrorPID(&PID_att);
-		}
-		
-		//Reference for inner loop (angular velocity control)
-		wDes = outputPID(PID_att);
-
-		//Calculate angular velocity error and update PID
-		error_att_vel = Subtract3x1Vec(wDes, IMU_localData_Vel);
-		updateErrorPID(&PID_angVel, error_att_vel, zeros, dt);
-
-		if (localMotor_Speed < takeOffThrust){
-			resetIntegralErrorPID(&PID_angVel);
-		}
-
-		inputTorque = outputPID(PID_angVel);
-		pthread_mutex_unlock(&PID_Mutex);
-
-		//Distribute power to motors
-		pthread_mutex_lock(&Contr_Input_Mutex);
-		Contr_Input.v[0] = localMotor_Speed;
-		Contr_Input.v[1] = inputTorque.v[0];
-		Contr_Input.v[2] = inputTorque.v[1];
-		Contr_Input.v[3] = inputTorque.v[2];
-		pthread_mutex_unlock(&Contr_Input_Mutex);
-
-		PCA_localData = u2pwmXshape(Contr_Input);
-
-
-		//Send motor commands
-		pthread_mutex_lock(&PCA_Mutex);
-		PCA_Data = PCA_localData;
-		pthread_mutex_unlock(&PCA_Mutex);
-
-
-	}
-	
-	printf("Control_Task stopping...\n");
-	threadCount -= 1;
-	pthread_exit(NULL);
-}
 
 void *Motor_Control(void *threadID){
 
@@ -585,8 +408,6 @@ void *Motor_Control(void *threadID){
 	
 	while(1){
 		WaitForEvent(e_Timeout,SamplingTime);
-		//_nh.spinOnce();
-
 		//Check system state
 		pthread_mutex_lock(&stateMachine_Mutex);
 		localCurrentState = currentState;
@@ -623,34 +444,6 @@ void *Motor_Control(void *threadID){
 		    pthread_mutex_unlock(&Motor_Speed_Mutex);
 		    printf("Motor Speed: %f\n", localMotor_Speed);
 		}
-		if (WaitForEvent(e_Roll_Pos, 0) == 0) {
-		    //motor up
-		    pthread_mutex_lock(&attRef_Mutex);
-			attRef.v[0] += attRef_Inc;
-		    pthread_mutex_unlock(&attRef_Mutex);
-		    printf("Roll Reference: %f\n", attRef.v[0]);
-		}
-		if (WaitForEvent(e_Roll_Neg, 0) == 0) {
-		    //motor up
-		    pthread_mutex_lock(&attRef_Mutex);
-			attRef.v[0] -= attRef_Inc;
-		    pthread_mutex_unlock(&attRef_Mutex);
-		    printf("Roll Reference: %f\n", attRef.v[0]);
-		}
-		if (WaitForEvent(e_Pitch_pos, 0) == 0) {
-		    //motor up
-		    pthread_mutex_lock(&attRef_Mutex);
-			attRef.v[1] += attRef_Inc;
-		    pthread_mutex_unlock(&attRef_Mutex);
-		    printf("Roll Reference: %f\n", attRef.v[0]);
-		}
-		if (WaitForEvent(e_Pitch_Neg, 0) == 0) {
-		    //motor up
-		    pthread_mutex_lock(&attRef_Mutex);
-			attRef.v[1] -= attRef_Inc;
-		    pthread_mutex_unlock(&attRef_Mutex);
-		    printf("Roll Reference: %f\n", attRef.v[0]);
-		}
 	}
 	
 	printf("Motor_Control stopping...\n");
@@ -673,44 +466,32 @@ int main(int argc, char *argv[])
 	pthread_t PCA_TimerThread;		//handle for PCA Timer thread
 	pthread_t MAG_Thread;			//handle for MAG thread
 	pthread_t PrintThread;			//handle for Printing thread
-	long IDthreadKeyboard, IDthreadIMU, IDthreadMAG; //Stores ID for threads
+	pthread_t rosSpinThread;
+	//long IDthreadKeyboard, IDthreadIMU, IDthreadMAG; //Stores ID for threads
 	int ReturnCode;
-	kalman_init();
+	kalman_init(); //Initialize kalman filter
 
-	//ros::init(argc, argv, "talker");
-
-	char *rosSrvrIp; // = "192.168.1.54";
 
 	printf("%d\n",argc);
 	if(argc != 2) {
-	  _nh.logfatal("Incorrect number of aruguments\n");
+	  _nh.logfatal("Incorrect number of arguments\n");
 	  return -1;
 	}
 	else {
 	  rosSrvrIp = argv[1];
 	}
-	  
-	_nh.initNode(rosSrvrIp);
+	 
 
-	//ros joy subscriber
-	ros::Subscriber<sensor_msgs::Joy> sub_mp_joy("/joy", handle_mp_joy_msg);
-	_nh.subscribe(sub_mp_joy);	
+  	// //ros publisher
+  	// std_msgs::Float32MultiArray rpyimu;
+  	// ros::Publisher imurpy_pub("IMU RPY", &rpyimu);
 
-  	ros::Subscriber<geometry_msgs::TransformStamped> sub_tform("/vicon/Niki/Niki", handle_pose_tform_msg);
-  	_nh.subscribe(sub_tform);
+  	// float Roll_pitch_yaw[] = {IMU_Data_RPY.v[0],IMU_Data_RPY.v[1],IMU_Data_RPY.v[2]};
 
-  	//ros publisher
-  	std_msgs::Float32MultiArray rpyimu;
-  	ros::Publisher imurpy_pub("IMU RPY", &rpyimu);
+  	// _nh.advertise(imurpy_pub);
 
-  	float Roll_pitch_yaw[] = {IMU_Data_RPY.v[0],IMU_Data_RPY.v[1],IMU_Data_RPY.v[2]};
-
-  	_nh.advertise(imurpy_pub);
-
-  	rpyimu.data = Roll_pitch_yaw;
-    imurpy_pub.publish( &rpyimu);
-    //_nh.spinOnce();
-    //delay(1000);
+  	// rpyimu.data = Roll_pitch_yaw;
+   //  imurpy_pub.publish( &rpyimu);
 
 
 	//std_msgs::Float32 imu_rpy;
@@ -726,21 +507,28 @@ int main(int argc, char *argv[])
 	attRef.v[0] = 0; attRef.v[1] = 0; attRef.v[2] = 0;
 
 	//Start events
-	e_endInit = CreateEvent(false,false);		//auto-reset event
+	e_endInit = CreateEvent(false,false);		//event that signalizes end of initialization
+
+	//Events for printing information
 	e_Key1 = CreateEvent(true,false); 			//manual-reset event
 	e_Key2 = CreateEvent(true,false); 			//manual-reset event
 	e_Key3 = CreateEvent(true,false);           //manual-reset event
 	e_Key4 = CreateEvent(true,false);           //manual-reset event
 	e_Key5 = CreateEvent(true,false);           //manual-reset event
+	e_Key6 = CreateEvent(true,false);           //manual-reset event
+	e_Key7 = CreateEvent(true,false);           //manual-reset event
+	e_Key8 = CreateEvent(true,false);           //manual-reset event
+	e_Key9 = CreateEvent(true,false);           //manual-reset event
+
+	//Events for changing thrust values
 	e_Motor_Up = CreateEvent(false,false);      //auto-reset event
 	e_Motor_Down = CreateEvent(false,false);    //auto-reset event
 	e_Motor_Kill = CreateEvent(false,false);    //auto-reset event
-	e_Roll_Pos = CreateEvent(false,false);    	//auto-reset event
-	e_Roll_Neg = CreateEvent(false,false);    	//auto-reset event
-	e_Pitch_pos = CreateEvent(false,false);    	//auto-reset event
-	e_Pitch_Neg = CreateEvent(false,false);    	//auto-reset event
 
+	//Termination 
 	e_KeyESC = CreateEvent(true,false); 		//abort manual-reset event
+
+	//Events that trigget threads
 	e_Timeout = CreateEvent(false,false);		//timeout event (always false)
 	e_IMU_trigger = CreateEvent(false,false); 	//auto-reset event
 	e_PCA_trigger = CreateEvent(false,false); 	//auto-reset event
@@ -753,12 +541,20 @@ int main(int argc, char *argv[])
 	pthread_mutex_init(&Contr_Input_Mutex, NULL);
 	pthread_mutex_init(&PID_Mutex, NULL);
 	pthread_mutex_init(&attRef_Mutex, NULL);
-	pthread_mutex_init(&posRef_Mutex, NULL);
 	pthread_mutex_init(&stateMachine_Mutex, NULL);
+	pthread_mutex_init(&PVA_Vicon_Mutex, NULL);
 
 	//Start keyboard task
 	if (ReturnCode = pthread_create(&keyboardThread, NULL, KeyboardTask, NULL)){
 		printf("Start KeyboardTask failed; return code from pthread_create() is %d\n", ReturnCode);
+		exit(-1);
+	}
+	else
+		threadCount += 1;
+
+	//Start rosSpin task
+	if (ReturnCode = pthread_create(&rosSpinThread, NULL, rosSpinTask, NULL)){
+		printf("Start rosSpin failed; return code from pthread_create() is %d\n", ReturnCode);
 		exit(-1);
 	}
 	else
@@ -857,13 +653,13 @@ int main(int argc, char *argv[])
 	DestroyEvent(e_Key3);
 	DestroyEvent(e_Key4);
 	DestroyEvent(e_Key5);
+	DestroyEvent(e_Key6);
+	DestroyEvent(e_Key7);
+	DestroyEvent(e_Key8);
+	DestroyEvent(e_Key9);
 	DestroyEvent(e_Motor_Up);
 	DestroyEvent(e_Motor_Down);
 	DestroyEvent(e_Motor_Kill);
-	DestroyEvent(e_Roll_Pos);
-	DestroyEvent(e_Roll_Neg);
-	DestroyEvent(e_Pitch_pos);
-	DestroyEvent(e_Pitch_Neg);
 	DestroyEvent(e_KeyESC);
 	DestroyEvent(e_Timeout);
 	DestroyEvent(e_IMU_trigger);
@@ -878,8 +674,8 @@ int main(int argc, char *argv[])
 	pthread_mutex_destroy(&Contr_Input_Mutex);
 	pthread_mutex_destroy(&PID_Mutex);
 	pthread_mutex_destroy(&attRef_Mutex);
-	pthread_mutex_destroy(&posRef_Mutex);
 	pthread_mutex_destroy(&stateMachine_Mutex);
+	pthread_mutex_destroy(&PVA_Vicon_Mutex);
 
    /* Last thing that main() should do */
    pthread_exit(NULL);
