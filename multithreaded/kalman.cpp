@@ -31,7 +31,7 @@ Matrix<float, 3, 3> I_3x3;
 void kalman_init()
 {
 
-	dt = 0.01;       // 100 Hz
+	dt = 0.005;       // 100 Hz
   sigma_Q = 3.2;   // constant for Q
 	vicon_R = 0.001; // estimated vicon error
   I_9x9 = Matrix<float, 9, 9>::Identity();
