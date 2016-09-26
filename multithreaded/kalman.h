@@ -4,8 +4,8 @@
 
 void kalman_init();
 
-Eigen::MatrixXd kalman(Eigen::MatrixXd z);
+void kalman_propagate();
 
-Eigen::MatrixXd pest();
+Eigen::Matrix<float, 6, 1> kalman_estimate(Eigen::Matrix<float, 3, 1> z);
 
 #endif

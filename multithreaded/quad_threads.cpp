@@ -26,6 +26,7 @@
 #include "rosserial/sensor_msgs/Joy.h"
 #include "rosserial/geometry_msgs/TransformStamped.h"
 #include "rosserial/qcontrol_defs/PVA.h"
+#include "rosserial/qcontrol_defs/PVA.h"
 #include "threads/keyboard_thread.h"
 #include "threads/control_thread.h"
 #include "threads/pca_thread.h"
@@ -33,11 +34,8 @@
 #include "threads/mpu_thread.h"
 //#include "threads/stateMachine.h"
 //#include "threads/overo.h"
-//add a header file for kalman
 #include "kalman.h"
-//#include "rosserial/ros.h"
 #include <cmath> 
-//using std::cin;
 using namespace neosmart;
 using namespace std;
 using std::string;
@@ -64,7 +62,9 @@ int currentState = INITIALIZING;
 //Ros handle and IP variable
 ros::NodeHandle  _nh;  
 char *rosSrvrIp;
+
 qcontrol_defs::PVA PVA_quadVicon;
+qcontrol_defs::PVA PVA_quadKalman;
 
 neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_Key6, e_Key7, e_Key8, e_Key9, e_KeyESC;
 neosmart_event_t e_Motor_Up, e_Motor_Down, e_Motor_Kill;
@@ -73,6 +73,7 @@ neosmart_event_t e_IMU_trigger;
 neosmart_event_t e_PCA_trigger;
 neosmart_event_t e_Control_trigger;
 neosmart_event_t e_endInit; //Event that indicates that initialization is done
+
 pthread_mutex_t IMU_Mutex;	//protect IMU data
 pthread_mutex_t PCA_Mutex;
 pthread_mutex_t Motor_Speed_Mutex;
@@ -81,7 +82,10 @@ pthread_mutex_t Contr_Input_Mutex;
 pthread_mutex_t PID_Mutex;
 pthread_mutex_t stateMachine_Mutex;
 pthread_mutex_t PVA_Vicon_Mutex;
+pthread_mutex_t PVA_Kalman_Mutex;
+
 float Motor_Speed = 0;
+
 Vec3 IMU_Data_RPY;
 Vec4 IMU_Data_Quat;
 Vec3 IMU_Data_Accel;
@@ -89,11 +93,16 @@ Vec3 IMU_Data_AngVel;
 Vec3 attRef;
 Vec4 Contr_Input;
 Vec4 PCA_Data;
+
 PID_3DOF PID_angVel; 	//Angular velocity PID
 PID_3DOF PID_att;		//Attitude PID
 //float* dmp_ypr;
+
 int threadCount = 0;		//Counts active threads
 float yaw_ctr_pos, yaw_ctr_neg;
+
+ofstream kalman_v;
+ofstream vicon_p;
 
 I2C i2c('3'); 
 
@@ -120,51 +129,29 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 
 void handle_Vicon(const geometry_msgs::TransformStamped& msg){
 
-    Eigen::MatrixXd z(3,1);   // measurement vector
+ 	pthread_mutex_lock(&PVA_Vicon_Mutex);	
 
-    Eigen::MatrixXd p_est_hist;
+		PVA_quadVicon.pos.position.x = msg.transform.translation.x;
+		PVA_quadVicon.pos.position.y = msg.transform.translation.y;
+		PVA_quadVicon.pos.position.z = msg.transform.translation.z;
 
-    Eigen::MatrixXd p_est_current;
-
-	z << msg.transform.translation.x,
-	     -msg.transform.translation.y,
-	     -msg.transform.translation.z;
-
-	p_est_hist = pest();
-
-	Eigen::MatrixXd kalman_state =  kalman(z);
-
-	p_est_current = pest();
-
-	pthread_mutex_lock(&PVA_Vicon_Mutex);	
-
-		PVA_quadVicon.pos.position.x = kalman_state(0,0);
-		PVA_quadVicon.pos.position.y = kalman_state(1,0);
-		PVA_quadVicon.pos.position.z = kalman_state(2,0);
-		PVA_quadVicon.vel.linear.x = kalman_state(3,0);
-		PVA_quadVicon.vel.linear.y = kalman_state(4,0);
-		PVA_quadVicon.vel.linear.z = kalman_state(5,0);
+		PVA_quadVicon.t = msg.header.stamp;
 
 		PVA_quadVicon.pos.orientation.w = msg.transform.rotation.w;
 		PVA_quadVicon.pos.orientation.x = msg.transform.rotation.x;
 		PVA_quadVicon.pos.orientation.y = msg.transform.rotation.y;
 		PVA_quadVicon.pos.orientation.z = msg.transform.rotation.z;
 
-  	pthread_mutex_unlock(&PVA_Vicon_Mutex);	
+  	pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
-  	//   	if (std::abs(p_est_hist.norm() - p_est_current.norm()) < 1)//if (std::abs(p_est_hist - p_est_current) < 1)
-  	// {
-
-  	// 	printf("Q Value: %f\n",kalman_state(6,0));
-  	// 	std::cout << p_est_current << std::endl;
-  	// }
-  //	PrintVec3(posRef, "posRef");
-  //	PrintVec3(velRef, "velRef");
+  	// kalman_v << kalman_state(3,0) << "," << kalman_state(4,0) << "," << kalman_state(5,0) << "\n";
+  	// vicon_p << z(0,0) << "," << z(1,0) << "," << z(2,0) << "\n";
 
   }
 
-void *rosSpinTask(void *treadID){
+void *rosSpinTask(void *threadID){
 	int SamplingTime = 5;	//Sampling time in milliseconds
+	int localCurrentState;
 
 	_nh.initNode(rosSrvrIp);
 
@@ -177,11 +164,93 @@ void *rosSpinTask(void *treadID){
 
   	while(1){
 		WaitForEvent(e_Timeout,SamplingTime);
+
+		//Check system state
+		pthread_mutex_lock(&stateMachine_Mutex);
+		
+		localCurrentState = currentState;
+		
+		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		//check if system should be terminated
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+
+
 		_nh.spinOnce();
   	}
+
+	printf("rosSpinTask stopping...\n");
+	threadCount -= 1;
+	pthread_exit(NULL);
 }
 
 
+void *Kalman_Task(void *threadID){
+	int SamplingTime = 5;	//Sampling time in milliseconds
+	int localCurrentState;
+
+	ros::Time current_time = ros::Time(0,0);
+	ros::Time prev_time = ros::Time(0,0);
+
+	Eigen::Matrix<float, 6, 1> kalman_state = Eigen::Matrix<float, 6, 1>::Zero();
+    Eigen::Matrix<float, 3, 1> z;   // measurement vector
+
+    kalman_init(); //Initialize kalman filter
+
+  	while(1){
+
+		WaitForEvent(e_Timeout,SamplingTime);
+
+		pthread_mutex_lock(&stateMachine_Mutex);
+		
+		localCurrentState = currentState;
+		
+		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		kalman_propagate();
+
+		//Check system state
+		pthread_mutex_lock(&PVA_Vicon_Mutex);
+
+		z <<  PVA_quadVicon.pos.position.x,
+		      PVA_quadVicon.pos.position.y,
+		      PVA_quadVicon.pos.position.z;
+
+		//current_time = PVA_quadVicon.t;
+
+		pthread_mutex_unlock(&PVA_Vicon_Mutex);
+
+		if (prev_time.toSec() != current_time.toSec())
+		{
+			kalman_state = kalman_estimate(z);	
+		}
+
+		prev_time = current_time;
+
+		pthread_mutex_lock(&PVA_Kalman_Mutex);
+
+		PVA_quadKalman.pos.position.x = kalman_state(0,0);
+		PVA_quadKalman.pos.position.y = kalman_state(1,0);
+		PVA_quadKalman.pos.position.z = kalman_state(2,0);
+		PVA_quadKalman.vel.linear.x = kalman_state(3,0);
+		PVA_quadKalman.vel.linear.y = kalman_state(4,0);
+		PVA_quadKalman.vel.linear.z = kalman_state(5,0);
+
+		pthread_mutex_unlock(&PVA_Kalman_Mutex);
+	  	kalman_v << kalman_state(3,0) << "," << kalman_state(4,0) << "," << kalman_state(5,0) << "\n";
+	  	vicon_p << z(0,0) << "," << z(1,0) << "," << z(2,0) << "\n";
+		//check if system should be terminated
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+  	}
+  		
+	printf("Kalman_Task stopping...\n");
+	threadCount -= 1;
+	pthread_exit(NULL);
+}
 
 
 void *StateMachineTask(void *threadID){
@@ -214,7 +283,6 @@ void *StateMachineTask(void *threadID){
 		if(currentState != INITIALIZING){
 
 		}
-
 			
 		switch(currentState)
 		{
@@ -239,8 +307,7 @@ void *StateMachineTask(void *threadID){
 		    case TERMINATE		   : 
 		    	//printf("POSITION_ROS_MODE\n"); 
 		    	break;
-		}
-			
+		}	
 		
 	}
 
@@ -466,11 +533,14 @@ int main(int argc, char *argv[])
 	pthread_t PCA_TimerThread;		//handle for PCA Timer thread
 	pthread_t MAG_Thread;			//handle for MAG thread
 	pthread_t PrintThread;			//handle for Printing thread
+	pthread_t Kalman_Thread;          //handle for Control Timer thread
 	pthread_t rosSpinThread;
 	//long IDthreadKeyboard, IDthreadIMU, IDthreadMAG; //Stores ID for threads
 	int ReturnCode;
-	kalman_init(); //Initialize kalman filter
+	
 
+  	kalman_v.open ("kalman_velocity.txt");
+  	vicon_p.open ("vicon_position.txt");
 
 	printf("%d\n",argc);
 	if(argc != 2) {
@@ -481,7 +551,6 @@ int main(int argc, char *argv[])
 	  rosSrvrIp = argv[1];
 	}
 	 
-
   	// //ros publisher
   	// std_msgs::Float32MultiArray rpyimu;
   	// ros::Publisher imurpy_pub("IMU RPY", &rpyimu);
@@ -491,8 +560,7 @@ int main(int argc, char *argv[])
   	// _nh.advertise(imurpy_pub);
 
   	// rpyimu.data = Roll_pitch_yaw;
-   //  imurpy_pub.publish( &rpyimu);
-
+    //  imurpy_pub.publish( &rpyimu);
 
 	//std_msgs::Float32 imu_rpy;
 	
@@ -500,8 +568,6 @@ int main(int argc, char *argv[])
 	
 	//Publish array
 	//imu_publish.publish(imu_rpy);
-
-
 
 	//Set initial reference
 	attRef.v[0] = 0; attRef.v[1] = 0; attRef.v[2] = 0;
@@ -543,6 +609,7 @@ int main(int argc, char *argv[])
 	pthread_mutex_init(&attRef_Mutex, NULL);
 	pthread_mutex_init(&stateMachine_Mutex, NULL);
 	pthread_mutex_init(&PVA_Vicon_Mutex, NULL);
+	pthread_mutex_init(&PVA_Kalman_Mutex, NULL);
 
 	//Start keyboard task
 	if (ReturnCode = pthread_create(&keyboardThread, NULL, KeyboardTask, NULL)){
@@ -552,7 +619,7 @@ int main(int argc, char *argv[])
 	else
 		threadCount += 1;
 
-	//Start rosSpin task
+	// Start rosSpin task
 	if (ReturnCode = pthread_create(&rosSpinThread, NULL, rosSpinTask, NULL)){
 		printf("Start rosSpin failed; return code from pthread_create() is %d\n", ReturnCode);
 		exit(-1);
@@ -635,6 +702,13 @@ int main(int argc, char *argv[])
 	else
 		threadCount += 1;
 
+	if (ReturnCode = pthread_create(&Kalman_Thread, NULL, Kalman_Task, NULL)){
+		printf("Start PrintThread failed; return code from pthread_create() is %d\n", ReturnCode);
+		exit(-1);
+	}
+	else
+		threadCount += 1;
+
 	//This has to be removed from here and put somewhere that indicates configurating the vechicle has been done
 	SetEvent(e_endInit);
 
@@ -676,7 +750,10 @@ int main(int argc, char *argv[])
 	pthread_mutex_destroy(&attRef_Mutex);
 	pthread_mutex_destroy(&stateMachine_Mutex);
 	pthread_mutex_destroy(&PVA_Vicon_Mutex);
+	pthread_mutex_destroy(&PVA_Kalman_Mutex);
 
    /* Last thing that main() should do */
    pthread_exit(NULL);
+   vicon_p.close();
+   kalman_v.close();	
 }
