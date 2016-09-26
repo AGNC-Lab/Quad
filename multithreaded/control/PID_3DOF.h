@@ -27,7 +27,7 @@ struct PID_3DOF{
 };
 
 extern pthread_mutex_t PID_Mutex;
-extern PID_3DOF PID_angVel, PID_att, PID_pos; 	//Control PIDs
+// extern PID_3DOF PID_angVel, PID_att, PID_pos; 	//Control PIDs
 
 //Sets initial errors to zero
 void initializePID(PID_3DOF* PID);

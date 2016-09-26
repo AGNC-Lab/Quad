@@ -81,9 +81,12 @@ vector<string> split(const string &s, char delim) {
 void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos) {
 	Vec3 KP_RPY, KD_RPY, KI_RPY, maxInteg_RPY;
 	Vec3 KP_w, KD_w, KI_w, maxInteg_w;
+	Vec3 KP_Pos, KD_Pos, KI_Pos, maxInteg_Pos;
 
     string line;
     vector<string> line_vec;
+
+    //Get parameters for attitude controller
     ifstream myfile ("/home/root/configAtt.txt");
     if (myfile.is_open()) {
 		while (getline (myfile ,line)) {
@@ -165,10 +168,68 @@ void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos) {
 		updateControlParamPID(PID_att, KP_RPY, KI_RPY, KD_RPY, maxInteg_RPY);
 		updateControlParamPID(PID_angVel, KP_w, KI_w, KD_w, maxInteg_w);
     }
-    
     else {
-		printf("Unable to open file"); 
+		printf("Unable to open file /home/root/configAtt.txt \n"); 
     }
+
+    //Get parameters for position controller
+    ifstream myfile2 ("/home/root/configPos.txt");
+    if (myfile2.is_open()) {
+		while (getline (myfile2 ,line)) {
+		    line_vec = split(line, ' ');
+		    if (line_vec[0] == "KP_X") {
+	            KP_Pos.v[0] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "KP_Y") {
+				KP_Pos.v[1] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "KP_Z") {
+				KP_Pos.v[2] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "KD_X") {
+	            KD_Pos.v[0] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "KD_Y") {
+				KD_Pos.v[1] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "KD_Z") {
+				KD_Pos.v[2] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "KI_X") {
+	            KI_Pos.v[0] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "KI_Y") {
+				KI_Pos.v[1] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "KI_Z") {
+				KI_Pos.v[2] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "maxInteg_X") {
+	            maxInteg_Pos.v[0] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "maxInteg_Y") {
+				maxInteg_Pos.v[1] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "maxInteg_Z") {
+				maxInteg_Pos.v[2] = atof(line_vec[2].c_str());
+		    }
+		}
+		myfile2.close();
+		updateControlParamPID(PID_pos, KP_Pos, KI_Pos, KD_Pos, maxInteg_Pos);
+    }
+    else {
+		printf("Unable to open file /home/root/configPos.txt \n"); 
+    }
+
+    PrintVec3(PID_att->K_p, "PID_att Kp");
+    PrintVec3(PID_att->K_i, "PID_att Ki");
+    PrintVec3(PID_att->K_d, "PID_att Kd");
+    PrintVec3(PID_angVel->K_p, "PID_w Kp");
+    PrintVec3(PID_angVel->K_i, "PID_w Ki");
+    PrintVec3(PID_angVel->K_d, "PID_w Kd");
+    PrintVec3(PID_pos->K_p, "PID_pos Kp");
+    PrintVec3(PID_pos->K_i, "PID_pos Ki");
+    PrintVec3(PID_pos->K_d, "PID_pos Kd");
 
 	printf("Done updating control parameters\n");
 }

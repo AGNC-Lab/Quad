@@ -41,7 +41,7 @@ void *AttControl_Task(void *threadID){
 	initializePID(&PID_angVel);
 	pthread_mutex_unlock(&PID_Mutex);
 	float dt = 0.010; 			//Sampling time
-	float takeOffThrust = 1.25; //Minimum thrust for resetting integral control
+	float takeOffThrust = 0.3; //Minimum thrust for resetting integral control
 	Vec3 localAttRef;
 
 	//Vectors of zeros

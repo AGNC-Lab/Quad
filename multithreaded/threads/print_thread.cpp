@@ -95,7 +95,12 @@ void *PrintTask(void *threadID){
 		printf("Vicon Position = %-7f %-7f %-7f\n", localViconPos.v[0], localViconPos.v[1], localViconPos.v[2]);
 		printf("Vicon Velocity = %-7f %-7f %-7f\n", localViconVel.v[0], localViconVel.v[1], localViconVel.v[2]);
 	    }
-
+	    if(WaitForEvent(e_Key8, 0) == 0)
+	    {
+			// pthread_mutex_lock(&PID_Mutex);
+			// 	PrintVec3(PID_att.e_integ, "e_integ Att");
+			// pthread_mutex_unlock(&PID_Mutex);
+	     }
 
 
 		

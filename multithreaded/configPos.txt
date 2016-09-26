@@ -1,0 +1,17 @@
+KP_X = 1.5
+KP_Y = 1.5
+KP_Z = 1.5
+
+KD_X = 1.5
+KD_Y = 1.5
+KD_Z = 1.5
+
+KI_X = .2
+KI_Y = .2
+KI_Z = .2
+
+maxInteg_X = .3
+maxInteg_Y = .3
+maxInteg_Z = .3
+
+
