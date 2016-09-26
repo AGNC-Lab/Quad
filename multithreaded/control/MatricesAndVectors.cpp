@@ -117,6 +117,21 @@ double p_normVec3(Vec3 V, int p){
 	return pow(pow(V.v[0], p) + pow(V.v[1], p) + pow(V.v[2], p), 1.0 / p);
 }
 
+Vec3 normalizeVec3(Vec3 V){
+	double normV = p_normVec3(V, 2);
+	if (normV > 0){
+		return ScaleVec3(V , 1.0 / normV);
+	}
+	else{
+		return V;
+	}
+}
+
+//Inner product between two matrices
+double innerProd(Vec3 V1, Vec3 V2){
+	return V1.v[0]*V2.v[0] + V1.v[1]*V2.v[1] + V1.v[2]*V2.v[2];
+}
+
 /* Print 3x3 matrices for debugging*/
 void PrintMat3x3(Mat3x3 Mat){
 	for (int i = 0; i < 3; i++){

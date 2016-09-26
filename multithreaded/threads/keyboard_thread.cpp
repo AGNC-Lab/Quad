@@ -1,7 +1,25 @@
 
 #include "threads/keyboard_thread.h"
 
-
+char getch() { //This function allows to capture char without needing to press 'ENTER'
+	char buf = 0;
+	struct termios old = {0};
+	if (tcgetattr(0, &old) < 0)
+		perror("tcsetattr()");
+	old.c_lflag &= ~ICANON;
+	old.c_lflag &= ~ECHO;
+	old.c_cc[VMIN] = 0;
+	old.c_cc[VTIME] = 5;
+	if (tcsetattr(0, TCSANOW, &old) < 0)
+		    perror("tcsetattr ICANON");
+	if (read(0, &buf, 1) < 0)
+		    perror ("read()");
+	old.c_lflag |= ICANON;
+	old.c_lflag |= ECHO;
+	if (tcsetattr(0, TCSADRAIN, &old) < 0)
+		    perror ("tcsetattr ~ICANON");
+	return (buf);
+}
 
 void *KeyboardTask(void *threadID)
 {
@@ -96,7 +114,9 @@ void *KeyboardTask(void *threadID)
 			printf("Key9 State: %d\n",Key9);
 		}
 		else if (ch == '0'){
-		    updatePar();
+			pthread_mutex_lock(&PID_Mutex);
+				updatePar(&PID_att, &PID_angVel, &PID_pos);
+			pthread_mutex_unlock(&PID_Mutex);
 		    printf("Updated parameters! \n");
 		}
 		else if (ch == 'w') { //the 'w' key
@@ -124,3 +144,57 @@ void *KeyboardTask(void *threadID)
 	pthread_exit(NULL);
 }
 
+void *Motor_KeyboardControl(void *threadID){
+
+	printf("Motor_Control has started!\n");
+	int SamplingTime = 10;	//Sampling time in milliseconds
+	float localThrust;
+	int localCurrentState;
+
+        //Initialize here
+	
+	while(1){
+		WaitForEvent(e_Timeout,SamplingTime);
+		//Check system state
+		pthread_mutex_lock(&stateMachine_Mutex);
+		localCurrentState = currentState;
+		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		//check if system should be terminated
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+		
+		if (WaitForEvent(e_Motor_Up, 0) == 0) {
+		    //motor up
+		    pthread_mutex_lock(&ThrustJoy_Mutex);
+		    if (ThrustJoy < Thrust_Max)
+				ThrustJoy += Thrust_Inc;
+			localThrust = ThrustJoy;
+		    pthread_mutex_unlock(&ThrustJoy_Mutex);
+		    printf("Motor Speed: %f\n", localThrust);
+		}
+		else if (WaitForEvent(e_Motor_Down, 0) == 0) {
+		    //motor down
+		    pthread_mutex_lock(&ThrustJoy_Mutex);
+		    if (ThrustJoy > Thrust_Min)
+				ThrustJoy -= Thrust_Inc;
+			localThrust = ThrustJoy;
+		    pthread_mutex_unlock(&ThrustJoy_Mutex);
+		    printf("Motor Speed: %f\n", localThrust);
+		}
+		else if (WaitForEvent(e_Motor_Kill, 0) == 0) {
+		    //motor kill
+		    pthread_mutex_lock(&ThrustJoy_Mutex);
+		    ThrustJoy = 0;
+		    localThrust = ThrustJoy;
+		    pthread_mutex_unlock(&ThrustJoy_Mutex);
+		    printf("Motor Speed: %f\n", localThrust);
+		}
+	}
+	
+	printf("Motor_Control stopping...\n");
+	//Shutdown here
+	threadCount -= 1;
+	pthread_exit(NULL);
+}

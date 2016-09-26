@@ -49,6 +49,12 @@ Vec3 cross(Vec3 V1, Vec3 V2);
 //Calculate the p-norm of a 3x1 vector
 double p_normVec3(Vec3 V, int p);
 
+//Normalize a vector into unit norm
+Vec3 normalizeVec3(Vec3 V);
+
+//Inner product between two matrices
+double innerProd(Vec3 V1, Vec3 V2);
+
 /* Print 3x3 matrices for debugging*/
 void PrintMat3x3(Mat3x3 Mat);
 

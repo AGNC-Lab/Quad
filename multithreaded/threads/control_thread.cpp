@@ -1,71 +1,12 @@
 
 
 #include "control_thread.h"
-#include "control/MatricesAndVectors.h"
-#include "control/QuatRotEuler.h"
-#include "control/MathFuncs.h"
-#include "control/AttitudeControl.h"
-#include "control/PID_3DOF.h"
-#include "pevents/pevents.h"	//Includes event handling (https://github.com/NeoSmart/PEvents)
-#include <pthread.h>
-#include <cstdio>
-//#include "rosserial/ros.h"
 
 
+void *AttControl_Timer(void *threadID){
 
-
-#define yaw_Inc PI/720
-#define TERMINATE 6
-#define PI 3.1415
-
-
-using namespace neosmart;
-
-
-//extern ros::NodeHandle _nh;
-
-extern neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
-extern neosmart_event_t e_Control_trigger;
-
-extern pthread_mutex_t attRef_Mutex;
-extern pthread_mutex_t Motor_Speed_Mutex;
-extern pthread_mutex_t stateMachine_Mutex;
-extern pthread_mutex_t IMU_Mutex;	//protect IMU data
-extern pthread_mutex_t PCA_Mutex;
-extern pthread_mutex_t PID_Mutex;
-
-
-extern Vec3 attRef;
-extern Vec3 posRef;
-extern Vec4 PCA_Data;
-extern Vec4 Contr_Input;
-
-extern Vec3 IMU_Data_RPY;
-extern Vec4 IMU_Data_Quat;
-extern Vec3 IMU_Data_Accel;
-extern Vec3 IMU_Data_AngVel;
-extern PID_3DOF PID_angVel; 	//Angular velocity PID
-extern PID_3DOF PID_att;		//Attitude PID
-
-
-extern pthread_mutex_t Contr_Input_Mutex;
-
-
-//extern float yaw_ctr_pos, yaw_ctr_neg;
-extern float Motor_Speed;
-
-extern int threadCount;	
-extern int currentState;
-
-extern void updatePar();
-
-
-extern Vec4 PCA_Data;
-
-void *Control_Timer(void *threadID){
-
-	printf("Control_Timer has started!\n");
-	int SamplingTime = 3;	//Sampling time in milliseconds
+	printf("AttControl_Timer has started!\n");
+	int SamplingTime = 10;	//Sampling time in milliseconds
 	int localCurrentState;
 
 	while(1){
@@ -81,38 +22,39 @@ void *Control_Timer(void *threadID){
 			break;
 		}
 
-		SetEvent(e_Control_trigger);
+		SetEvent(e_AttControl_trigger);
 	}
 	
-	printf("Control_Timer stopping...\n");
+	printf("AttControl_Timer stopping...\n");
 	//Shutdown here
 	threadCount -= 1;
 	pthread_exit(NULL);
 }
 
 
-void *Control_Task(void *threadID){
-	printf("Control_Task has started!\n");
+void *AttControl_Task(void *threadID){
+	printf("AttControl_Task has started!\n");
 
 	//Initialize PIDs (sets initial errors to zero)
 	pthread_mutex_lock(&PID_Mutex);
 	initializePID(&PID_att);
 	initializePID(&PID_angVel);
 	pthread_mutex_unlock(&PID_Mutex);
-	float dt = 0.003; 			//Sampling time
-	float takeOffThrust = 6; 	//Minimum thrust to take off
+	float dt = 0.010; 			//Sampling time
+	float takeOffThrust = 1.25; //Minimum thrust for resetting integral control
 	Vec3 localAttRef;
 
 	//Vectors of zeros
 	Vec3 zeros;
 	zeros.v[0] = 0; zeros.v[1] = 0; zeros.v[2] = 0; 
+	Vec3 feedforward = zeros;
 
 	Vec4 IMU_localData_Quat;
 	Vec3 IMU_localData_Vel;
 	Vec3 IMU_localData_RPY;
 	Vec3 inputTorque;
 	Vec4 PCA_localData;
-	float localMotor_Speed;
+	float localThrust;
 	int localCurrentState;
 
 
@@ -125,15 +67,12 @@ void *Control_Task(void *threadID){
 	
 
 	//Mat3x3 Rdes = RPY2Rot(0,0,0);
-
-	updatePar();
-
 	//PrintMat3x3(Concatenate3Vec3_2_Mat3x3(PID_att.K_p, PID_att.K_d, PID_att.K_i));
 	//PrintMat3x3(Concatenate3Vec3_2_Mat3x3(PID_angVel.K_p, PID_angVel.K_d, PID_angVel.K_i));
 
 	while(1){
 
-		WaitForEvent(e_Control_trigger,500);
+		WaitForEvent(e_AttControl_trigger,500);
 
 		//Check system state
 		pthread_mutex_lock(&stateMachine_Mutex);
@@ -146,9 +85,16 @@ void *Control_Task(void *threadID){
 		}
 
 		//Throttle
-	    pthread_mutex_lock(&Motor_Speed_Mutex);
-			localMotor_Speed = Motor_Speed;
-		pthread_mutex_unlock(&Motor_Speed_Mutex);
+	    pthread_mutex_lock(&ThrustJoy_Mutex);
+			localThrust = ThrustJoy;
+		pthread_mutex_unlock(&ThrustJoy_Mutex);
+
+		//Grab attitude reference
+		pthread_mutex_lock(&attRefJoy_Mutex);	
+		    localAttRef = attRefJoy;
+	    pthread_mutex_unlock(&attRefJoy_Mutex);
+	    Rdes = RPY2Rot(localAttRef.v[0], localAttRef.v[1], localAttRef.v[2]);
+
 
 		//Grab attitude estimation
 		pthread_mutex_lock(&IMU_Mutex);
@@ -156,33 +102,20 @@ void *Control_Task(void *threadID){
 			IMU_localData_Vel = IMU_Data_AngVel;
 			IMU_localData_RPY = IMU_Data_RPY;
 		pthread_mutex_unlock(&IMU_Mutex);
-
-		//Grab attitude reference (set yaw to measured yaw if quad isnt flying)
-		pthread_mutex_lock(&attRef_Mutex);	
-			if (localMotor_Speed <= 0) {
-		    	attRef.v[2] = IMU_localData_RPY.v[2];
-		    }
-		    localAttRef = attRef;
-	    pthread_mutex_unlock(&attRef_Mutex);
-
-
-	    Rdes = RPY2Rot(localAttRef.v[0], localAttRef.v[1], localAttRef.v[2]);
-	    Rbw = Quat2rot(IMU_localData_Quat);
+		Rbw = Quat2rot(IMU_localData_Quat);
 
 	    //Calculate attitude error
 	    error_att = AttitudeErrorVector(Rbw, Rdes);
 	    //PrintVec3(error_att, "error_att"); 
-		//error_att = Subtract3x1Vec(localAttRef, IMU_localData_RPY);
-		//PrintVec3(error_att,"error_att");
 
 		//Update PID
 		pthread_mutex_lock(&PID_Mutex);
 			if(!isNanVec3(error_att)){
-				updateErrorPID(&PID_att, error_att, zeros, dt);
+				updateErrorPID(&PID_att, feedforward, error_att, zeros, dt);
 			}
 
 			//Dont integrate integrator if not in minimum thrust
-			if (localMotor_Speed < takeOffThrust){
+			if (localThrust < takeOffThrust){
 				resetIntegralErrorPID(&PID_att);
 			}
 			
@@ -191,18 +124,19 @@ void *Control_Task(void *threadID){
 
 			//Calculate angular velocity error and update PID
 			error_att_vel = Subtract3x1Vec(wDes, IMU_localData_Vel);
-			updateErrorPID(&PID_angVel, error_att_vel, zeros, dt);
+			updateErrorPID(&PID_angVel, feedforward, error_att_vel, zeros, dt);
 
-			if (localMotor_Speed < takeOffThrust){
+			if (localThrust < takeOffThrust){
 				resetIntegralErrorPID(&PID_angVel);
 			}
 
-			inputTorque = outputPID(PID_angVel);
+			//This scale of 16.0 should be excluded eventually (incorporate it in gains)
+			inputTorque = ScaleVec3(outputPID(PID_angVel), 1.0/16.0);
 		pthread_mutex_unlock(&PID_Mutex);
 
 		//Distribute power to motors
 		pthread_mutex_lock(&Contr_Input_Mutex);
-			Contr_Input.v[0] = localMotor_Speed;
+			Contr_Input.v[0] = localThrust;
 			Contr_Input.v[1] = inputTorque.v[0];
 			Contr_Input.v[2] = inputTorque.v[1];
 			Contr_Input.v[3] = inputTorque.v[2];
@@ -217,7 +151,152 @@ void *Control_Task(void *threadID){
 
 	}
 	
-	printf("Control_Task stopping...\n");
+	printf("AttControl_Task stopping...\n");
+	threadCount -= 1;
+	pthread_exit(NULL);
+}
+
+void *PosControl_Timer(void *threadID){
+
+	printf("PosControl_Timer has started!\n");
+	int SamplingTime = 50;	//Sampling time in milliseconds
+	int localCurrentState;
+
+	while(1){
+		WaitForEvent(e_Timeout,SamplingTime);
+
+		//Check system state
+		pthread_mutex_lock(&stateMachine_Mutex);
+			localCurrentState = currentState;
+		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		//check if system should be terminated
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+
+		SetEvent(e_PosControl_trigger);
+	}
+	
+	printf("PosControl_Timer stopping...\n");
+	//Shutdown here
+	threadCount -= 1;
+	pthread_exit(NULL);
+}
+
+void *PosControl_Task(void *threadID){
+	printf("PosControl_Task has started!\n");
+
+	float dt = 0.050; 			//Sampling time
+	double m = 0.26, gz = 9.81;  //Mass and gravity for quadcopter
+	double nominalThrust = 1.0;
+	int localCurrentState;
+	float yawDesired;
+	Vec3 e_Pos, e_Vel; 			//error in position and velocity
+	Vec3 acc_Ref;				//Desired acceleration
+	Vec3 feedForward;			//Feedforward vector
+	Vec3 Fdes;
+	Vec3 z_bdes, x_cdes, y_bdes, x_bdes;
+	Vec4 IMU_localData_Quat;
+	qcontrol_defs::PVA localPVA_quadVicon, localPVA_Ref;
+
+	Vec3 z_w;	//z vector of the inertial frame
+	Vec3 z_b;	//z vector of the body frame
+	z_w.v[0] = 0; z_w.v[1] = 0; z_w.v[2] = 1;
+
+	//Vectors of zeros
+	Vec3 zeros;
+	zeros.v[0] = 0; zeros.v[1] = 0; zeros.v[2] = 0; 
+
+	//Initialize PIDs (sets initial errors to zero)
+	pthread_mutex_lock(&PID_Mutex);
+	initializePID(&PID_pos);
+	pthread_mutex_unlock(&PID_Mutex);
+
+	while(1){
+
+		WaitForEvent(e_PosControl_trigger,500);
+
+		//Check system state
+		pthread_mutex_lock(&stateMachine_Mutex);
+			localCurrentState = currentState;
+		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		//check if system should be terminated
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+
+		//Grab attitude estimation
+		pthread_mutex_lock(&IMU_Mutex);
+			IMU_localData_Quat = IMU_Data_Quat;
+		pthread_mutex_unlock(&IMU_Mutex);
+
+		//Grab position and velocity estimation
+		pthread_mutex_lock(&PVA_Vicon_Mutex);	
+			localPVA_quadVicon = PVA_quadVicon;
+	  	pthread_mutex_unlock(&PVA_Vicon_Mutex);	
+
+	  	//Grab joystick position and velocity reference
+		pthread_mutex_lock(&posRefJoy_Mutex);	
+			localPVA_Ref = PVA_RefJoy;
+	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
+
+		//Grab yaw reference
+		pthread_mutex_lock(&attRefJoy_Mutex);	
+		    yawDesired = attRefJoy.v[2];
+	    pthread_mutex_unlock(&attRefJoy_Mutex);
+
+	  	//Calculate position and velocity errors
+	  	e_Pos.v[0] = localPVA_Ref.pos.position.x - localPVA_quadVicon.pos.position.x;
+	  	e_Pos.v[1] = localPVA_Ref.pos.position.y - localPVA_quadVicon.pos.position.y;
+	  	e_Pos.v[2] = localPVA_Ref.pos.position.z - localPVA_quadVicon.pos.position.z;
+	  	e_Vel.v[0] = localPVA_Ref.vel.linear.x - localPVA_quadVicon.vel.linear.x;
+	  	e_Vel.v[1] = localPVA_Ref.vel.linear.y - localPVA_quadVicon.vel.linear.y;
+	  	e_Vel.v[2] = localPVA_Ref.vel.linear.z - localPVA_quadVicon.vel.linear.z;
+	  	
+	  	//Get feedforward vector
+	  	acc_Ref.v[0] = localPVA_Ref.acc.linear.x;
+	  	acc_Ref.v[1] = localPVA_Ref.acc.linear.y;
+	  	acc_Ref.v[2] = localPVA_Ref.acc.linear.z;
+	  	feedForward = ScaleVec3(z_w, nominalThrust);
+	  	// feedForward = Add3x1Vec(ScaleVec3(z_w, nominalThrust), ScaleVec3(acc_Ref, 1.0/gz));//feedForward = m*gz*z_w + m*ref_dotdot
+
+		//Vehicle attitude
+		Mat3x3 Rbw = Quat2rot(IMU_localData_Quat);
+		z_b = MultiplyMat3x3Vec3(Rbw, z_w); //z vector of the vehicle in inertial frame
+
+		updateErrorPID(&PID_pos, feedForward, e_Pos, e_Vel, dt);
+
+		//Calculate 3d world desired force for the quadcopter and normalize it
+		Fdes = outputPID(PID_pos);
+
+		//Desired thrust in body frame
+	    pthread_mutex_lock(&ThrustPosControl_Mutex);
+			ThrustPosControl = innerProd(Fdes, z_b);
+		pthread_mutex_unlock(&ThrustPosControl_Mutex);
+
+		//Find desired attitude from desired force and yaw angle
+		z_bdes = normalizeVec3(Fdes);
+		// x_cdes.v[0] = cos(yawDesired); 
+		// x_cdes.v[1] = sin(yawDesired); 
+		x_cdes.v[0] = 0; 
+		x_cdes.v[1] = 0; 
+		x_cdes.v[2] = 0;
+		y_bdes = normalizeVec3(cross(z_bdes, x_cdes));
+		x_bdes = cross(y_bdes, z_bdes);
+
+		//Set desired rotation matrix for attitude
+		pthread_mutex_lock(&attRefPosControl_Mutex);
+			Rdes_PosControl = Concatenate3Vec3_2_Mat3x3(x_bdes, y_bdes, z_bdes);
+		pthread_mutex_unlock(&attRefPosControl_Mutex);
+
+		// PrintMat3x3(Rdes);
+
+
+	}
+	
+	printf("PosControl_Task stopping...\n");
 	threadCount -= 1;
 	pthread_exit(NULL);
 }

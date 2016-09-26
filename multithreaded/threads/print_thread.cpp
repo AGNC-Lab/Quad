@@ -1,45 +1,6 @@
 
 #include "threads/print_thread.h"
 
-#include "pevents/pevents.h"	//Includes event handling (https://github.com/NeoSmart/PEvents)
-#include <pthread.h>
-#include "control/QuatRotEuler.h"
-#include <cstdio>
-#include "rosserial/qcontrol_defs/PVA.h"
-
-#include "control/MatricesAndVectors.h"
-
-#define TERMINATE 6
-#define PI 3.1415
-
-using namespace neosmart;
-
-
-extern pthread_mutex_t stateMachine_Mutex;
-extern pthread_mutex_t IMU_Mutex;	//protect IMU data
-extern pthread_mutex_t PCA_Mutex;
-extern pthread_mutex_t Contr_Input_Mutex;
-extern pthread_mutex_t attRef_Mutex;
-extern pthread_mutex_t PVA_Vicon_Mutex;
-extern neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
-
-
-extern Vec3 attRef;
-extern Vec4 PCA_Data;
-extern Vec3 IMU_Data_RPY;
-extern Vec4 IMU_Data_Quat;
-extern Vec3 IMU_Data_Accel;
-extern Vec3 IMU_Data_AngVel;
-extern Vec4 Contr_Input;
-extern qcontrol_defs::PVA PVA_quadVicon;
-
-
-extern int threadCount;	
-extern int currentState;
-extern neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_KeyESC;
-extern neosmart_event_t e_Key6, e_Key7, e_Key8, e_Key9;
-
-
 
 void *PrintTask(void *threadID){
 	printf("PrintTask has started!\n");
@@ -115,9 +76,9 @@ void *PrintTask(void *threadID){
 	    if(WaitForEvent(e_Key6, 0) == 0)
 	    {	
 		//WaitForEvent(e_Timeout,5);
-		pthread_mutex_lock(&attRef_Mutex);
-			localattRef = attRef;
-		pthread_mutex_unlock(&attRef_Mutex);
+		pthread_mutex_lock(&attRefJoy_Mutex);
+			localattRef = attRefJoy;
+		pthread_mutex_unlock(&attRefJoy_Mutex);
 		printf("Attitide Reference (RPY) = %-7f %-7f %-7f\n", localattRef.v[0], localattRef.v[1], localattRef.v[2]);
 	    }
 	    if(WaitForEvent(e_Key7, 0) == 0)

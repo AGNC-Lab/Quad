@@ -1,1 +1,1 @@
-/home/sahabi/AGNC/Quad/multithreaded/CMakeFiles/data.dir
+/home/rnl/Desktop/Marcelino/Quad/multithreaded/CMakeFiles/data.dir

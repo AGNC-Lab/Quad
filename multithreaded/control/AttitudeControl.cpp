@@ -131,10 +131,10 @@ Vec4 u2pwmTshape(Vec4 u){
 
 	//Assign outputs (note that Mikicopter assign minimum value at 1000
 	Vec4 pwm;
-	pwm.v[0] = sqrt(pwm_squared.v[0])/4000;
-	pwm.v[1] = sqrt(pwm_squared.v[1])/4000;
-	pwm.v[2] = sqrt(pwm_squared.v[2])/4000;
-	pwm.v[3] = sqrt(pwm_squared.v[3])/4000;
+	pwm.v[0] = sqrt(pwm_squared.v[0])/1000;
+	pwm.v[1] = sqrt(pwm_squared.v[1])/1000;
+	pwm.v[2] = sqrt(pwm_squared.v[2])/1000;
+	pwm.v[3] = sqrt(pwm_squared.v[3])/1000;
 //PrintVec4(pwm,"pwm");
 	return pwm;
 }

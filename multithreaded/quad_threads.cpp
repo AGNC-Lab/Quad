@@ -1,175 +1,109 @@
 
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <termios.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <unistd.h>
+//#include <iostream>
+//#include <fstream>
+//#include <cmath> 
+//#include <math.h>
+
 #include "pevents/pevents.h"	//Includes event handling (https://github.com/NeoSmart/PEvents)
-//#include "MPU6050/dmp.h"				
-//#include "PCA9685/pca9685.h"
 #include "I2C/i2c.h"
 #include "control/MatricesAndVectors.h"
 #include "control/QuatRotEuler.h"
-//#include "control/MathFuncs.h"
 #include "control/AttitudeControl.h"
 #include "control/PID_3DOF.h"
-//#include "MPU6050/helper_3dmath.h"
-#include <vector>
-#include <math.h>
-#include <stdlib.h>
-#include <sstream>
+
 #include "rosserial/ros.h"
-//#include "rosserial/std_msgs/Float32MultiArray.h"
-#include "rosserial/sensor_msgs/Joy.h"
-#include "rosserial/geometry_msgs/TransformStamped.h"
+#include "rosserial/geometry_msgs/Wrench.h"
 #include "rosserial/qcontrol_defs/PVA.h"
-#include "rosserial/qcontrol_defs/PVA.h"
+
 #include "threads/keyboard_thread.h"
 #include "threads/control_thread.h"
 #include "threads/pca_thread.h"
 #include "threads/print_thread.h"
 #include "threads/mpu_thread.h"
-//#include "threads/stateMachine.h"
-//#include "threads/overo.h"
+#include "threads/stateMachine.h"
+#include "threads/Ros_threads.h"
+// #include "overo/overo.h"
+
 #include "kalman.h"
-#include <cmath> 
+
+
 using namespace neosmart;
 using namespace std;
-using std::string;
-using std::ostringstream;
-//using namespace thread;
+
 
 #define PI 3.1415
-#define Motor_Speed_Max 20.0
-#define Motor_Speed_Min 0.0
-#define Motor_Speed_Inc 2.0
-#define yaw_Inc PI/720
-
-//Define system states
-#define INITIALIZING 0
-#define INITIALIZED 1
-#define MOTOR_MODE 2
-#define ATTITUDE_MODE 3
-#define POSITION_JOY_MODE 4
-#define POSITION_ROS_MODE 5
-#define TERMINATE 6
 
 int currentState = INITIALIZING;
 
 //Ros handle and IP variable
 ros::NodeHandle  _nh;  
 char *rosSrvrIp;
-
 qcontrol_defs::PVA PVA_quadVicon;
 qcontrol_defs::PVA PVA_quadKalman;
+qcontrol_defs::PVA PVA_RefJoy;
 
+//Events and mutexes
 neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_Key6, e_Key7, e_Key8, e_Key9, e_KeyESC;
+neosmart_event_t e_buttonX, e_buttonY, e_buttonA, e_buttonB;
 neosmart_event_t e_Motor_Up, e_Motor_Down, e_Motor_Kill;
 neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
 neosmart_event_t e_IMU_trigger;
 neosmart_event_t e_PCA_trigger;
-neosmart_event_t e_Control_trigger;
+neosmart_event_t e_AttControl_trigger, e_PosControl_trigger;
 neosmart_event_t e_endInit; //Event that indicates that initialization is done
-
 pthread_mutex_t IMU_Mutex;	//protect IMU data
 pthread_mutex_t PCA_Mutex;
-pthread_mutex_t Motor_Speed_Mutex;
-pthread_mutex_t attRef_Mutex;
+pthread_mutex_t ThrustJoy_Mutex;
+pthread_mutex_t ThrustPosControl_Mutex;
+pthread_mutex_t attRefJoy_Mutex, posRefJoy_Mutex;
+pthread_mutex_t attRefPosControl_Mutex;
 pthread_mutex_t Contr_Input_Mutex;
 pthread_mutex_t PID_Mutex;
 pthread_mutex_t stateMachine_Mutex;
 pthread_mutex_t PVA_Vicon_Mutex;
 pthread_mutex_t PVA_Kalman_Mutex;
+pthread_mutex_t ROS_Mutex;
 
-float Motor_Speed = 0;
-
-Vec3 IMU_Data_RPY;
+//Global variables
+float ThrustJoy = 0;
+float ThrustPosControl = 0;
+Vec3 IMU_Data_RPY, IMU_Data_Accel, IMU_Data_AngVel;
 Vec4 IMU_Data_Quat;
-Vec3 IMU_Data_Accel;
-Vec3 IMU_Data_AngVel;
-Vec3 attRef;
+Vec3 attRefJoy;
+Mat3x3 Rdes_PosControl;
 Vec4 Contr_Input;
 Vec4 PCA_Data;
-
-PID_3DOF PID_angVel; 	//Angular velocity PID
-PID_3DOF PID_att;		//Attitude PID
-//float* dmp_ypr;
-
+PID_3DOF PID_angVel, PID_att, PID_pos; 	//Control PIDs
 int threadCount = 0;		//Counts active threads
-float yaw_ctr_pos, yaw_ctr_neg;
 
-ofstream kalman_v;
-ofstream vicon_p;
+// ofstream kalman_v;
+// ofstream vicon_p;
 
 I2C i2c('3'); 
 
-void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
-	pthread_mutex_lock(&attRef_Mutex);	
-	attRef.v[0] = -msg.axes[3]*PI/6; //roll
-	attRef.v[1] = msg.axes[4]*PI/6; //pitch
-	yaw_ctr_pos = msg.axes[2];
-	yaw_ctr_neg = msg.axes[5];
-	if (yaw_ctr_neg < 0) {
-		attRef.v[2] -= yaw_Inc;
-	}								//yaw
-	if (yaw_ctr_pos < 0) {
-		attRef.v[2] += yaw_Inc;
-	}
-	pthread_mutex_unlock(&attRef_Mutex);
-	//PrintVec3(attRef, "attRef");
-
-	pthread_mutex_lock(&Motor_Speed_Mutex);
-	Motor_Speed = msg.axes[1] * 20;
-	pthread_mutex_unlock(&Motor_Speed_Mutex);
-
-}
-
-void handle_Vicon(const geometry_msgs::TransformStamped& msg){
-
- 	pthread_mutex_lock(&PVA_Vicon_Mutex);	
-
-		PVA_quadVicon.pos.position.x = msg.transform.translation.x;
-		PVA_quadVicon.pos.position.y = msg.transform.translation.y;
-		PVA_quadVicon.pos.position.z = msg.transform.translation.z;
-
-		PVA_quadVicon.t = msg.header.stamp;
-
-		PVA_quadVicon.pos.orientation.w = msg.transform.rotation.w;
-		PVA_quadVicon.pos.orientation.x = msg.transform.rotation.x;
-		PVA_quadVicon.pos.orientation.y = msg.transform.rotation.y;
-		PVA_quadVicon.pos.orientation.z = msg.transform.rotation.z;
-
-  	pthread_mutex_unlock(&PVA_Vicon_Mutex);
-
-  	// kalman_v << kalman_state(3,0) << "," << kalman_state(4,0) << "," << kalman_state(5,0) << "\n";
-  	// vicon_p << z(0,0) << "," << z(1,0) << "," << z(2,0) << "\n";
-
-  }
 
 void *rosSpinTask(void *threadID){
-	int SamplingTime = 5;	//Sampling time in milliseconds
+	int SamplingTime = 10;	//Sampling time in milliseconds
 	int localCurrentState;
-
-	_nh.initNode(rosSrvrIp);
+	printf("rosSpinTask has started!\n");
 
 	//ros joy subscriber
 	ros::Subscriber<sensor_msgs::Joy> sub_mp_joy("/joy", handle_mp_joy_msg);
 	_nh.subscribe(sub_mp_joy);	
 
-  	ros::Subscriber<geometry_msgs::TransformStamped> sub_tform("/vicon/Niki/Niki", handle_Vicon);
-  	_nh.subscribe(sub_tform);
+  	// ros::Subscriber<geometry_msgs::TransformStamped> sub_tform("/vicon/Quad7/Quad7", handle_Vicon);
+  	// _nh.subscribe(sub_tform);
 
   	while(1){
 		WaitForEvent(e_Timeout,SamplingTime);
 
 		//Check system state
 		pthread_mutex_lock(&stateMachine_Mutex);
-		
-		localCurrentState = currentState;
-		
+			localCurrentState = currentState;
 		pthread_mutex_unlock(&stateMachine_Mutex);
 
 		//check if system should be terminated
@@ -177,18 +111,118 @@ void *rosSpinTask(void *threadID){
 			break;
 		}
 
-
-		_nh.spinOnce();
+		//Trigger subscribers
+	  	pthread_mutex_lock(&ROS_Mutex);
+		    _nh.spinOnce();
+	    pthread_mutex_unlock(&ROS_Mutex);
+		
   	}
 
-	printf("rosSpinTask stopping...\n");
+  	printf("rosSpinTask stopping...\n");
 	threadCount -= 1;
 	pthread_exit(NULL);
 }
 
+void *rosPublisherTask(void *threadID){
+	printf("rosPublisherTask has started!\n");
+	int SamplingTime = 50;	//Sampling time in milliseconds
+	int localCurrentState;
+	Vec3 RPY;
+
+	//ros publisher
+  	geometry_msgs::Point RPY_IMU;
+  	geometry_msgs::Point RPY_Ref;
+  	geometry_msgs::Wrench controlInputs;
+
+  	ros::Publisher imurpy_pub("IMU_RPY", &RPY_IMU);
+  	ros::Publisher Refrpy_pub("IMU_Ref", &RPY_Ref);
+  	ros::Publisher imuWrench_pub("Quad_Inputs", &controlInputs);
+  	_nh.advertise(imurpy_pub);
+  	_nh.advertise(Refrpy_pub);
+  	_nh.advertise(imuWrench_pub);
+	
+
+	  while(1){
+		WaitForEvent(e_Timeout,SamplingTime);
+
+		//Check system state
+		pthread_mutex_lock(&stateMachine_Mutex);
+			localCurrentState = currentState;
+		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		//check if system should be terminated
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+
+		//Get IMU roll pitch yaw data
+	  	pthread_mutex_lock(&IMU_Mutex);
+		  	RPY_IMU.x = IMU_Data_RPY.v[0];
+		  	RPY_IMU.y = IMU_Data_RPY.v[1];
+		  	RPY_IMU.z = IMU_Data_RPY.v[2];
+	  	pthread_mutex_unlock(&IMU_Mutex);
+
+		//Get attitude references
+		if(localCurrentState == ATTITUDE_MODE){
+			pthread_mutex_lock(&attRefJoy_Mutex);
+				RPY_Ref.x = attRefJoy.v[0];
+				RPY_Ref.y = attRefJoy.v[1];
+				RPY_Ref.z = attRefJoy.v[2];
+			pthread_mutex_unlock(&attRefJoy_Mutex);
+		}
+		else if(localCurrentState == POSITION_JOY_MODE){
+			pthread_mutex_lock(&attRefPosControl_Mutex);
+				RPY = Quat2RPY(Rot2quat(Rdes_PosControl));
+			pthread_mutex_unlock(&attRefPosControl_Mutex);
+			RPY_Ref.x = RPY.v[0];
+			RPY_Ref.y = RPY.v[1];
+			RPY_Ref.z = RPY.v[2];
+		}
+		else{
+			RPY_Ref.x = 0;
+			RPY_Ref.y = 0;
+			RPY_Ref.z = 0;
+		}
+
+	  	//Get inputs for quadcopter
+		pthread_mutex_lock(&Contr_Input_Mutex);
+			controlInputs.force.x = 0;
+			controlInputs.force.y = 0;
+			controlInputs.force.z =  Contr_Input.v[0];
+			controlInputs.torque.x = Contr_Input.v[1];
+			controlInputs.torque.y = Contr_Input.v[2];
+			controlInputs.torque.z = Contr_Input.v[3];
+		pthread_mutex_unlock(&Contr_Input_Mutex);
+
+	  	//Publish everything
+	  	pthread_mutex_lock(&ROS_Mutex);
+		    imurpy_pub.publish( &RPY_IMU);
+		    Refrpy_pub.publish( &RPY_Ref);
+		    imuWrench_pub.publish( &controlInputs);
+		    // _nh.spinOnce();
+	    pthread_mutex_unlock(&ROS_Mutex);
+
+  	}
+
+  	printf("rosPublisherTask stopping...\n");
+	threadCount -= 1;
+	pthread_exit(NULL);
+}
+
+// //change red light to green after restart
+// void set_pwm_mux_to_ap() {
+//   // This function is intended to toggle the PWM mux on the MikiPilot AP Board (R2) to autopilot
+//   // mode (green LED). Once done, the channel is turned back into an input to avoid contention 
+//   // if something is driving this GPIO. It is assumed that JP2 is populated (see page 5 of 
+//   // MikiPilot AP Board (R2) Schematics).
+//   mc_overo.gpio_set_direction(overo::GPIO_147,overo::OUT);
+//   mc_overo.gpio_set_value(overo::GPIO_147,overo::HIGH);
+//   mc_overo.gpio_set_value(overo::GPIO_147,overo::LOW);
+//   mc_overo.gpio_set_direction(overo::GPIO_147,overo::IN);
+// } 
 
 void *Kalman_Task(void *threadID){
-	int SamplingTime = 5;	//Sampling time in milliseconds
+	int SamplingTime = 10;	//Sampling time in milliseconds
 	int localCurrentState;
 
 	ros::Time current_time = ros::Time(0,0);
@@ -239,8 +273,8 @@ void *Kalman_Task(void *threadID){
 		PVA_quadKalman.vel.linear.z = kalman_state(5,0);
 
 		pthread_mutex_unlock(&PVA_Kalman_Mutex);
-	  	kalman_v << kalman_state(3,0) << "," << kalman_state(4,0) << "," << kalman_state(5,0) << "\n";
-	  	vicon_p << z(0,0) << "," << z(1,0) << "," << z(2,0) << "\n";
+	  	// kalman_v << kalman_state(3,0) << "," << kalman_state(4,0) << "," << kalman_state(5,0) << "\n";
+	  	// vicon_p << z(0,0) << "," << z(1,0) << "," << z(2,0) << "\n";
 		//check if system should be terminated
 		if(localCurrentState == TERMINATE){
 			break;
@@ -252,297 +286,34 @@ void *Kalman_Task(void *threadID){
 	pthread_exit(NULL);
 }
 
-
-void *StateMachineTask(void *threadID){
-
-	printf("Initializing system... \n");
-
-	while(1){
-		
-		WaitForEvent(e_Timeout,50); //Run every 50ms
-
-		if(currentState == INITIALIZING){
-			if(WaitForEvent(e_endInit,0) == 0){
-				pthread_mutex_lock(&stateMachine_Mutex);
-				currentState = INITIALIZED;
-				pthread_mutex_unlock(&stateMachine_Mutex);
-				printf("System Initialized! \n");
-			}
-		}
-
-		//Check if ESC was pressed
-		if(WaitForEvent(e_KeyESC,0) == 0){
-			pthread_mutex_lock(&stateMachine_Mutex);
-			currentState = TERMINATE;
-			pthread_mutex_unlock(&stateMachine_Mutex);
-			printf("System Terminating... \n\n");
-			break;
-		}
-
-		//If the current state is not INITIALIZING, then any transition is acceptable
-		if(currentState != INITIALIZING){
-
-		}
-			
-		switch(currentState)
-		{
-		    case INITIALIZING      : 
-		    	//printf("INITIALIZING\n");      
-		    	break;
-		    case INITIALIZED       : 
-		    	//printf("INITIALIZED\n");       
-		    	break;
-		    case MOTOR_MODE        : 
-			    //printf("MOTOR_MODE\n");        
-			    break;
-		    case ATTITUDE_MODE     : 
-		    	//printf("ATTITUDE_MODE\n");     
-		    		break;
-		    case POSITION_JOY_MODE : 
-		    	///printf("POSITION_JOY_MODE\n"); 
-		    		break;
-		    case POSITION_ROS_MODE : 
-		    	//printf("POSITION_ROS_MODE\n"); 
-		    	break;
-		    case TERMINATE		   : 
-		    	//printf("POSITION_ROS_MODE\n"); 
-		    	break;
-		}	
-		
-	}
-
-	printf("StateMachineTask stopping...\n");
-	threadCount -= 1;
-	pthread_exit(NULL);
-}
-
-//change red light to green after restart
-/*void set_pwm_mux_to_ap() {
-  // This function is intended to toggle the PWM mux on the MikiPilot AP Board (R2) to autopilot
-  // mode (green LED). Once done, the channel is turned back into an input to avoid contention 
-  // if something is driving this GPIO. It is assumed that JP2 is populated (see page 5 of 
-  // MikiPilot AP Board (R2) Schematics).
-  mc_overo.gpio_set_direction(overo::GPIO_147,overo::OUT);
-  mc_overo.gpio_set_value(overo::GPIO_147,overo::HIGH);
-  mc_overo.gpio_set_value(overo::GPIO_147,overo::LOW);
-  mc_overo.gpio_set_direction(overo::GPIO_147,overo::IN);
-} */
-
-//Helper functions to parse the config file
-void split(const string &s, char delim, vector<string> &elems) {
-    stringstream ss(s);
-    string item;
-    while (getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-}
-
-
-vector<string> split(const string &s, char delim) {
-    vector<string> elems;
-    split(s, delim, elems);
-    return elems;
-}
-
-
-void updatePar() {
-	Vec3 KP_RPY, KD_RPY, KI_RPY, maxInteg_RPY;
-	Vec3 KP_w, KD_w, KI_w, maxInteg_w;
-
-    string line;
-    vector<string> line_vec;
-    ifstream myfile ("/home/root/config.txt");
-    if (myfile.is_open()) {
-		while (getline (myfile ,line)) {
-		    line_vec = split(line, ' ');
-		    if (line_vec[0] == "KP_R") {
-	            KP_RPY.v[0] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KP_P") {
-				KP_RPY.v[1] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KP_Y") {
-				KP_RPY.v[2] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KD_R") {
-	            	KD_RPY.v[0] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KD_P") {
-				KD_RPY.v[1] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KD_Y") {
-				KD_RPY.v[2] = atof(line_vec[2].c_str());
-		    }
-		    if (line_vec[0] == "KI_R") {
-	            KI_RPY.v[0] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KI_P") {
-				KI_RPY.v[1] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KI_Y") {
-				KI_RPY.v[2] = atof(line_vec[2].c_str());
-		    }
-		    if (line_vec[0] == "maxInteg_R") {
-	            maxInteg_RPY.v[0] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "maxInteg_P") {
-				maxInteg_RPY.v[1] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "maxInteg_Y") {
-				maxInteg_RPY.v[2] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KP_wx") {
-				KP_w.v[0] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KP_wy") {
-				KP_w.v[1] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KP_wz") {
-		        KP_w.v[2]  = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KD_wx") {
-				KD_w.v[0] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KD_wy") {
-				KD_w.v[1] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KD_wz") {
-		        KD_w.v[2]   = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KI_wx") {
-				KI_w.v[0] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KI_wy") {
-				KI_w.v[1] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "KI_wz") {
-		        KI_w.v[2]  = atof(line_vec[2].c_str());
-		    }
-		    if (line_vec[0] == "maxInteg_wx") {
-	            maxInteg_w.v[0] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "maxInteg_wy") {
-				maxInteg_w.v[1] = atof(line_vec[2].c_str());
-		    }
-		    else if (line_vec[0] == "maxInteg_wz") {
-				maxInteg_w.v[2] = atof(line_vec[2].c_str());
-		    }
-		}
-		myfile.close();
-		pthread_mutex_lock(&PID_Mutex);
-		updateControlParamPID(&PID_att, KP_RPY, KI_RPY, KD_RPY, maxInteg_RPY);
-		updateControlParamPID(&PID_angVel, KP_w, KI_w, KD_w, maxInteg_w);
-		pthread_mutex_unlock(&PID_Mutex);
-    }
-    
-    else {
-		printf("Unable to open file"); 
-    }
-
-	printf("Done updating control parameters\n");
-}
-
-
-char getch() { //This function allows to capture char without needing to press 'ENTER'
-	char buf = 0;
-	struct termios old = {0};
-	if (tcgetattr(0, &old) < 0)
-		perror("tcsetattr()");
-	old.c_lflag &= ~ICANON;
-	old.c_lflag &= ~ECHO;
-	old.c_cc[VMIN] = 0;
-	old.c_cc[VTIME] = 5;
-	if (tcsetattr(0, TCSANOW, &old) < 0)
-		    perror("tcsetattr ICANON");
-	if (read(0, &buf, 1) < 0)
-		    perror ("read()");
-	old.c_lflag |= ICANON;
-	old.c_lflag |= ECHO;
-	if (tcsetattr(0, TCSADRAIN, &old) < 0)
-		    perror ("tcsetattr ~ICANON");
-	return (buf);
-}
-
-
-void *Motor_Control(void *threadID){
-
-	printf("Motor_Control has started!\n");
-	int SamplingTime = 10;	//Sampling time in milliseconds
-	float localMotor_Speed;
-	int localCurrentState;
-
-        //Initialize here
-	
-	while(1){
-		WaitForEvent(e_Timeout,SamplingTime);
-		//Check system state
-		pthread_mutex_lock(&stateMachine_Mutex);
-		localCurrentState = currentState;
-		pthread_mutex_unlock(&stateMachine_Mutex);
-
-		//check if system should be terminated
-		if(localCurrentState == TERMINATE){
-			break;
-		}
-		
-		if (WaitForEvent(e_Motor_Up, 0) == 0) {
-		    //motor up
-		    pthread_mutex_lock(&Motor_Speed_Mutex);
-		    if (Motor_Speed < Motor_Speed_Max)
-				Motor_Speed += Motor_Speed_Inc;
-			localMotor_Speed = Motor_Speed;
-		    pthread_mutex_unlock(&Motor_Speed_Mutex);
-		    printf("Motor Speed: %f\n", localMotor_Speed);
-		}
-		else if (WaitForEvent(e_Motor_Down, 0) == 0) {
-		    //motor down
-		    pthread_mutex_lock(&Motor_Speed_Mutex);
-		    if (Motor_Speed > Motor_Speed_Min)
-				Motor_Speed -= Motor_Speed_Inc;
-			localMotor_Speed = Motor_Speed;
-		    pthread_mutex_unlock(&Motor_Speed_Mutex);
-		    printf("Motor Speed: %f\n", localMotor_Speed);
-		}
-		else if (WaitForEvent(e_Motor_Kill, 0) == 0) {
-		    //motor kill
-		    pthread_mutex_lock(&Motor_Speed_Mutex);
-		    Motor_Speed = 0;
-		    localMotor_Speed = Motor_Speed;
-		    pthread_mutex_unlock(&Motor_Speed_Mutex);
-		    printf("Motor Speed: %f\n", localMotor_Speed);
-		}
-	}
-	
-	printf("Motor_Control stopping...\n");
-	//Shutdown here
-	threadCount -= 1;
-	pthread_exit(NULL);
-}
-
 int main(int argc, char *argv[])
 {
 	//handles for threads
 	pthread_t keyboardThread;		//Handle for keyboard thread
 	pthread_t Motor_ControlThread;
 	pthread_t StateMachine_Thread;
-	pthread_t Control_Thread;               //handle for Control thread
-	pthread_t Control_TimerThread;          //handle for Control Timer thread
+	pthread_t AttControl_Thread;     
+	pthread_t AttControl_TimerThread;
+	pthread_t PosControl_Thread;     
+	pthread_t PosControl_TimerThread;
 	pthread_t IMU_Thread;			//handle for IMU thread
 	pthread_t IMU_TimerThread;		//handle for IMU Timer thread
 	pthread_t PCA_Thread;			//handle for PCA thread
 	pthread_t PCA_TimerThread;		//handle for PCA Timer thread
 	pthread_t MAG_Thread;			//handle for MAG thread
 	pthread_t PrintThread;			//handle for Printing thread
-	pthread_t Kalman_Thread;          //handle for Control Timer thread
 	pthread_t rosSpinThread;
+	pthread_t rosPublisherThread;
+	pthread_t Kalman_Thread;
 	//long IDthreadKeyboard, IDthreadIMU, IDthreadMAG; //Stores ID for threads
 	int ReturnCode;
-	
+	kalman_init(); //Initialize kalman filter
 
-  	kalman_v.open ("kalman_velocity.txt");
-  	vicon_p.open ("vicon_position.txt");
+	// kalman_v.open ("kalman_velocity.txt");
+	// vicon_p.open ("vicon_position.txt");
 
-	printf("%d\n",argc);
+	//Check if number of arguments are correct
+	printf("Number of arguments: %d\n",argc);
 	if(argc != 2) {
 	  _nh.logfatal("Incorrect number of arguments\n");
 	  return -1;
@@ -550,32 +321,23 @@ int main(int argc, char *argv[])
 	else {
 	  rosSrvrIp = argv[1];
 	}
-	 
-  	// //ros publisher
-  	// std_msgs::Float32MultiArray rpyimu;
-  	// ros::Publisher imurpy_pub("IMU RPY", &rpyimu);
 
-  	// float Roll_pitch_yaw[] = {IMU_Data_RPY.v[0],IMU_Data_RPY.v[1],IMU_Data_RPY.v[2]};
-
-  	// _nh.advertise(imurpy_pub);
-
-  	// rpyimu.data = Roll_pitch_yaw;
-    //  imurpy_pub.publish( &rpyimu);
-
-	//std_msgs::Float32 imu_rpy;
-	
-	///imu_rpy.data = {};
-	
-	//Publish array
-	//imu_publish.publish(imu_rpy);
+	//Start ROS handle
+	_nh.initNode(rosSrvrIp);
 
 	//Set initial reference
-	attRef.v[0] = 0; attRef.v[1] = 0; attRef.v[2] = 0;
+	attRefJoy.v[0] = 0; attRefJoy.v[1] = 0; attRefJoy.v[2] = 0;
+	PVA_RefJoy.pos.position.x = 0;
+	PVA_RefJoy.pos.position.y = 0;
+	PVA_RefJoy.pos.position.z = 1;
+	PVA_RefJoy.vel.linear.x = 0;
+	PVA_RefJoy.vel.linear.y = 0;
+	PVA_RefJoy.vel.linear.z = 0;
 
 	//Start events
 	e_endInit = CreateEvent(false,false);		//event that signalizes end of initialization
 
-	//Events for printing information
+	//Keyboard Events for printing information
 	e_Key1 = CreateEvent(true,false); 			//manual-reset event
 	e_Key2 = CreateEvent(true,false); 			//manual-reset event
 	e_Key3 = CreateEvent(true,false);           //manual-reset event
@@ -586,30 +348,44 @@ int main(int argc, char *argv[])
 	e_Key8 = CreateEvent(true,false);           //manual-reset event
 	e_Key9 = CreateEvent(true,false);           //manual-reset event
 
+	//Keyboard event for execution termination
+	e_KeyESC = CreateEvent(true,false); 		//abort manual-reset event
+
+	//Joystick events for changing flight modes
+	e_buttonX = CreateEvent(true,false);
+	e_buttonY = CreateEvent(true,false);
+	e_buttonA = CreateEvent(true,false);
+	e_buttonB = CreateEvent(true,false);
+
 	//Events for changing thrust values
 	e_Motor_Up = CreateEvent(false,false);      //auto-reset event
 	e_Motor_Down = CreateEvent(false,false);    //auto-reset event
 	e_Motor_Kill = CreateEvent(false,false);    //auto-reset event
 
-	//Termination 
-	e_KeyESC = CreateEvent(true,false); 		//abort manual-reset event
-
 	//Events that trigget threads
 	e_Timeout = CreateEvent(false,false);		//timeout event (always false)
 	e_IMU_trigger = CreateEvent(false,false); 	//auto-reset event
 	e_PCA_trigger = CreateEvent(false,false); 	//auto-reset event
-	e_Control_trigger = CreateEvent(false, false);  //auto-reset event
+	e_AttControl_trigger = CreateEvent(false, false);  //auto-reset event
+	e_PosControl_trigger = CreateEvent(false, false);  //auto-reset event
 
 	//Create mutexes
 	pthread_mutex_init(&IMU_Mutex, NULL);
 	pthread_mutex_init(&PCA_Mutex, NULL);
-	pthread_mutex_init(&Motor_Speed_Mutex, NULL);
+	pthread_mutex_init(&ThrustJoy_Mutex, NULL);
 	pthread_mutex_init(&Contr_Input_Mutex, NULL);
 	pthread_mutex_init(&PID_Mutex, NULL);
-	pthread_mutex_init(&attRef_Mutex, NULL);
+	pthread_mutex_init(&attRefJoy_Mutex, NULL);
 	pthread_mutex_init(&stateMachine_Mutex, NULL);
 	pthread_mutex_init(&PVA_Vicon_Mutex, NULL);
-	pthread_mutex_init(&PVA_Kalman_Mutex, NULL);
+	pthread_mutex_init(&ROS_Mutex, NULL);
+	pthread_mutex_init(&posRefJoy_Mutex, NULL);
+	pthread_mutex_init(&ThrustPosControl_Mutex, NULL);
+
+	//Load PID parameters from file
+	pthread_mutex_lock(&PID_Mutex);
+		updatePar(&PID_att, &PID_angVel, &PID_pos);
+	pthread_mutex_unlock(&PID_Mutex);
 
 	//Start keyboard task
 	if (ReturnCode = pthread_create(&keyboardThread, NULL, KeyboardTask, NULL)){
@@ -619,7 +395,7 @@ int main(int argc, char *argv[])
 	else
 		threadCount += 1;
 
-	// Start rosSpin task
+	//Start rosSpin task
 	if (ReturnCode = pthread_create(&rosSpinThread, NULL, rosSpinTask, NULL)){
 		printf("Start rosSpin failed; return code from pthread_create() is %d\n", ReturnCode);
 		exit(-1);
@@ -627,40 +403,62 @@ int main(int argc, char *argv[])
 	else
 		threadCount += 1;
 
+	//Start ros publisher task
+	if (ReturnCode = pthread_create(&rosPublisherThread, NULL, rosPublisherTask, NULL)){
+		printf("Start rosPublisher failed; return code from pthread_create() is %d\n", ReturnCode);
+		exit(-1);
+	}
+	else
+		threadCount += 1;
+
+
 	//Start state StateMachineTask
 	if (ReturnCode = pthread_create(&StateMachine_Thread, NULL, StateMachineTask, NULL)){
-		printf("Start KeyboardTask failed; return code from pthread_create() is %d\n", ReturnCode);
+		printf("Start StateMachineTask failed; return code from pthread_create() is %d\n", ReturnCode);
 		exit(-1);
 	}
 	else
 		threadCount += 1;
 
-
-	//Start Control task
-	if (ReturnCode = pthread_create(&Control_Thread, NULL, Control_Task, NULL)){
-		printf("Start Control_Task failed; return code from pthread_create() is %d\n", ReturnCode);
-		exit(-1);
-	}
-	else
-			threadCount += 1;
-
-	//Start Control timer task
-	if (ReturnCode = pthread_create(&Motor_ControlThread, NULL, Motor_Control, NULL)){
-		printf("Start Motor_ContorlTask failed; return code from pthread_create() is %d\n", ReturnCode);
-		exit(-1);
-	}
-	else
-		threadCount += 1;
-
-
-	//Start Control timer task
-	if (ReturnCode = pthread_create(&Control_TimerThread, NULL, Control_Timer, NULL)){
+	//Start Attitude Control timer task
+	if (ReturnCode = pthread_create(&AttControl_TimerThread, NULL, AttControl_Timer, NULL)){
 		printf("Start Control_TimerTask failed; return code from pthread_create() is %d\n", ReturnCode);
 		exit(-1);
 	}
 	else
 		threadCount += 1;
 
+	//Start Attitude Control task
+	if (ReturnCode = pthread_create(&AttControl_Thread, NULL, AttControl_Task, NULL)){
+		printf("Start Control_Task failed; return code from pthread_create() is %d\n", ReturnCode);
+		exit(-1);
+	}
+	else
+			threadCount += 1;
+
+	//Start Position Control timer task
+	if (ReturnCode = pthread_create(&PosControl_TimerThread, NULL, PosControl_Timer, NULL)){
+		printf("Start PosControl_Timer failed; return code from pthread_create() is %d\n", ReturnCode);
+		exit(-1);
+	}
+	else
+		threadCount += 1;
+
+	//Start position Control task
+	if (ReturnCode = pthread_create(&PosControl_Thread, NULL, PosControl_Task, NULL)){
+		printf("Start PosControl_Task failed; return code from pthread_create() is %d\n", ReturnCode);
+		exit(-1);
+	}
+	else
+			threadCount += 1;
+
+	//Start keyboard control task
+	if (ReturnCode = pthread_create(&Motor_ControlThread, NULL, Motor_KeyboardControl, NULL)){
+		printf("Start Motor_ContorlTask failed; return code from pthread_create() is %d\n", ReturnCode);
+		exit(-1);
+	}
+	else
+		threadCount += 1;
 
 	//Start IMU task
 	if (ReturnCode = pthread_create(&IMU_Thread, NULL, IMU_Task, NULL)){
@@ -668,7 +466,7 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 	else
-			threadCount += 1;
+		threadCount += 1;
 
 	//Start IMU timer task
 	if (ReturnCode = pthread_create(&IMU_TimerThread, NULL, IMU_Timer, NULL)){
@@ -677,13 +475,14 @@ int main(int argc, char *argv[])
 	}
 	else
 		threadCount += 1;
+
 	//Start PCA task
 	if (ReturnCode = pthread_create(&PCA_Thread, NULL, PCA_Task, NULL)){
 		printf("Start PCA_Task failed; return code from pthread_create() is %d\n", ReturnCode);
 		exit(-1);
 	}
 	else
-			threadCount += 1;
+		threadCount += 1;
 
 	//Start PCA timer task
 	if (ReturnCode = pthread_create(&PCA_TimerThread, NULL, PCA_Timer, NULL)){
@@ -702,6 +501,7 @@ int main(int argc, char *argv[])
 	else
 		threadCount += 1;
 
+	//Start kalman filter task
 	if (ReturnCode = pthread_create(&Kalman_Thread, NULL, Kalman_Task, NULL)){
 		printf("Start PrintThread failed; return code from pthread_create() is %d\n", ReturnCode);
 		exit(-1);
@@ -731,29 +531,36 @@ int main(int argc, char *argv[])
 	DestroyEvent(e_Key7);
 	DestroyEvent(e_Key8);
 	DestroyEvent(e_Key9);
+	DestroyEvent(e_KeyESC);
+	DestroyEvent(e_buttonX);
+	DestroyEvent(e_buttonY);
+	DestroyEvent(e_buttonA);
+	DestroyEvent(e_buttonB);
 	DestroyEvent(e_Motor_Up);
 	DestroyEvent(e_Motor_Down);
 	DestroyEvent(e_Motor_Kill);
-	DestroyEvent(e_KeyESC);
 	DestroyEvent(e_Timeout);
 	DestroyEvent(e_IMU_trigger);
 	DestroyEvent(e_PCA_trigger);
-	DestroyEvent(e_Control_trigger);
+	DestroyEvent(e_AttControl_trigger);
+	DestroyEvent(e_PosControl_trigger);
 	DestroyEvent(e_endInit);
 
 	//Destroy mutexes
 	pthread_mutex_destroy(&IMU_Mutex);
 	pthread_mutex_destroy(&PCA_Mutex);
-	pthread_mutex_destroy(&Motor_Speed_Mutex);
+	pthread_mutex_destroy(&ThrustJoy_Mutex);
 	pthread_mutex_destroy(&Contr_Input_Mutex);
 	pthread_mutex_destroy(&PID_Mutex);
-	pthread_mutex_destroy(&attRef_Mutex);
+	pthread_mutex_destroy(&attRefJoy_Mutex);
 	pthread_mutex_destroy(&stateMachine_Mutex);
 	pthread_mutex_destroy(&PVA_Vicon_Mutex);
-	pthread_mutex_destroy(&PVA_Kalman_Mutex);
+	pthread_mutex_destroy(&ROS_Mutex);
+	pthread_mutex_destroy(&posRefJoy_Mutex);
+	pthread_mutex_destroy(&ThrustPosControl_Mutex);
 
    /* Last thing that main() should do */
-   pthread_exit(NULL);
-   vicon_p.close();
-   kalman_v.close();	
+	// vicon_p.close();
+	// kalman_v.close(); 
+    pthread_exit(NULL);
 }

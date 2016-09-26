@@ -1,35 +1,6 @@
 
 #include "mpu_thread.h"
-
-#include "MPU6050/dmp.h"	
-#include "pevents/pevents.h"	//Includes event handling (https://github.com/NeoSmart/PEvents)
-#include <pthread.h>
-#include "control/QuatRotEuler.h"
-
-#include "control/MatricesAndVectors.h"
-
-
-#define TERMINATE 6
-#define PI 3.1415
-
-
-using namespace neosmart;
-
-extern pthread_mutex_t stateMachine_Mutex;
-extern pthread_mutex_t IMU_Mutex;	//protect IMU data
-
-extern Vec3 IMU_Data_RPY;
-extern Vec4 IMU_Data_Quat;
-extern Vec3 IMU_Data_Accel;
-extern Vec3 IMU_Data_AngVel;
-
-extern neosmart_event_t e_IMU_trigger;
-extern neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
-
-extern int threadCount;	
-extern int currentState;
-
-
+#include "MPU6050/dmp.h"
 
 void *IMU_Timer(void *threadID){
 

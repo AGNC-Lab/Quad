@@ -197,8 +197,10 @@ int elCommWrite(int fd, uint8_t* data, int len)
   while (totalsent < length)
   {
     rv = write(fd, data + totalsent, length);
-    if (rv < 0)
-      perror("write(): error writing - trying again - ");
+    if (rv < 0){
+      perror("rosserial write(): error writing - trying again - ");
+      usleep(100000);
+    }
     else
       totalsent += rv;
   }
