@@ -17,7 +17,7 @@ extern pthread_mutex_t stateMachine_Mutex;
 extern pthread_mutex_t IMU_Mutex;	//protect IMU data
 
 extern Vec3 IMU_Data_RPY;
-extern Vec4 IMU_Data_Quat;
+extern Vec4 IMU_Data_Quat, IMU_Data_QuatNoYaw;
 extern Vec3 IMU_Data_Accel;
 extern Vec3 IMU_Data_AngVel;
 

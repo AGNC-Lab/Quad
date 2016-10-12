@@ -16,10 +16,17 @@ using namespace neosmart;
 #define POSITION_ROS_MODE 5
 #define TERMINATE 6
 
+//Define states for Yaw sources
+#define _IMU 0
+#define _VICON 1
+
 extern neosmart_event_t e_KeyESC, e_Timeout, e_endInit;
 extern neosmart_event_t e_buttonX, e_buttonY, e_buttonA, e_buttonB;
+extern neosmart_event_t e_SwitchYawSource;
 extern pthread_mutex_t stateMachine_Mutex;
+extern pthread_mutex_t YawSource_Mutex;
 extern int currentState;
+extern int YawSource;
 extern int threadCount;
 
 void *StateMachineTask(void *threadID);

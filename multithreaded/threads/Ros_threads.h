@@ -1,6 +1,7 @@
 
 
 #include "control/MatricesAndVectors.h"
+#include "control/QuatRotEuler.h"
 #include "threads/stateMachine.h"
 // #include "rosserial/ros.h"
 //#include "rosserial/std_msgs/Float32MultiArray.h"
@@ -25,8 +26,9 @@ extern pthread_mutex_t ROS_Mutex;
 
 //Global variables
 extern float ThrustJoy;
-extern Vec3 IMU_Data_RPY;
+extern Vec3 IMU_Data_RPY, IMU_Data_RPY_ViconYaw;
 extern Vec3 attRefJoy;
+extern Vec4 IMU_Data_QuatNoYaw, IMU_Data_Quat_ViconYaw;
 extern Vec4 Contr_Input;
 extern int threadCount;		//Counts active threads
 

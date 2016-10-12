@@ -31,7 +31,7 @@ pca9685 pca(&i2c);
 void *PCA_Timer(void *threadID){
 
 	printf("PCA_Timer has started!\n");
-	int SamplingTime = 3;	//Sampling time in milliseconds
+	int SamplingTime = 5;	//Sampling time in milliseconds
 	int localCurrentState;
 
 	pca.initialize();

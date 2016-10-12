@@ -693,6 +693,7 @@ CMakeFiles/data.dir/threads/Ros_threads.cpp.o
  /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseUnaryOps.h
  control/MatricesAndVectors.h
+ control/QuatRotEuler.h
  kalman.h
  pevents/pevents.h
  rosserial/geometry_msgs/Accel.h
@@ -760,6 +761,7 @@ CMakeFiles/data.dir/threads/pca_thread.cpp.o
 CMakeFiles/data.dir/threads/print_thread.cpp.o
  /home/rnl/Desktop/Marcelino/Quad/multithreaded/threads/print_thread.cpp
  control/MatricesAndVectors.h
+ control/PID_3DOF.h
  control/QuatRotEuler.h
  pevents/pevents.h
  rosserial/geometry_msgs/Accel.h

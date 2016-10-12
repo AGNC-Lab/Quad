@@ -6,7 +6,7 @@
 void *AttControl_Timer(void *threadID){
 
 	printf("AttControl_Timer has started!\n");
-	int SamplingTime = 10;	//Sampling time in milliseconds
+	int SamplingTime = 5;	//Sampling time in milliseconds
 	int localCurrentState;
 
 	while(1){
@@ -40,7 +40,7 @@ void *AttControl_Task(void *threadID){
 	initializePID(&PID_att);
 	initializePID(&PID_angVel);
 	pthread_mutex_unlock(&PID_Mutex);
-	float dt = 0.010; 			//Sampling time
+	float dt = 0.005; 			//Sampling time
 	float takeOffThrust = 0.3; //Minimum thrust for resetting integral control
 	Vec3 localAttRef;
 
@@ -56,6 +56,7 @@ void *AttControl_Task(void *threadID){
 	Vec4 PCA_localData;
 	float localThrust;
 	int localCurrentState;
+	int localYawSource;
 
 
 	Vec3 error_att;
@@ -90,18 +91,41 @@ void *AttControl_Task(void *threadID){
 		pthread_mutex_unlock(&ThrustJoy_Mutex);
 
 		//Grab attitude reference
-		pthread_mutex_lock(&attRefJoy_Mutex);	
-		    localAttRef = attRefJoy;
-	    pthread_mutex_unlock(&attRefJoy_Mutex);
-	    Rdes = RPY2Rot(localAttRef.v[0], localAttRef.v[1], localAttRef.v[2]);
+		if(localCurrentState == ATTITUDE_MODE){
+			pthread_mutex_lock(&attRefJoy_Mutex);	
+			    localAttRef = attRefJoy;
+		    pthread_mutex_unlock(&attRefJoy_Mutex);
+		    Rdes = RPY2Rot(localAttRef.v[0], localAttRef.v[1], localAttRef.v[2]);
+		}
+		else if (localCurrentState == POSITION_JOY_MODE){
+			pthread_mutex_lock(&attRefPosControl_Mutex);
+				Rdes = Rdes_PosControl;
+			pthread_mutex_unlock(&attRefPosControl_Mutex);
+		}
 
+
+		pthread_mutex_lock(&YawSource_Mutex);
+			localYawSource = YawSource;
+		pthread_mutex_unlock(&YawSource_Mutex);
 
 		//Grab attitude estimation
-		pthread_mutex_lock(&IMU_Mutex);
-			IMU_localData_Quat = IMU_Data_Quat;
-			IMU_localData_Vel = IMU_Data_AngVel;
-			IMU_localData_RPY = IMU_Data_RPY;
-		pthread_mutex_unlock(&IMU_Mutex);
+		if (localYawSource == _IMU){
+			pthread_mutex_lock(&IMU_Mutex);
+				IMU_localData_Quat = IMU_Data_Quat;
+				IMU_localData_Vel = IMU_Data_AngVel;
+				IMU_localData_RPY = IMU_Data_RPY;
+			pthread_mutex_unlock(&IMU_Mutex);
+		}
+		else{
+			pthread_mutex_lock(&PVA_Vicon_Mutex);
+				IMU_localData_Quat = IMU_Data_Quat_ViconYaw;
+			pthread_mutex_unlock(&PVA_Vicon_Mutex);
+			pthread_mutex_lock(&IMU_Mutex);
+				IMU_localData_Vel = IMU_Data_AngVel;
+				IMU_localData_RPY = IMU_Data_RPY;
+			pthread_mutex_unlock(&IMU_Mutex);
+		}
+
 		Rbw = Quat2rot(IMU_localData_Quat);
 
 	    //Calculate attitude error
@@ -159,7 +183,7 @@ void *AttControl_Task(void *threadID){
 void *PosControl_Timer(void *threadID){
 
 	printf("PosControl_Timer has started!\n");
-	int SamplingTime = 50;	//Sampling time in milliseconds
+	int SamplingTime = 20;	//Sampling time in milliseconds
 	int localCurrentState;
 
 	while(1){
@@ -198,7 +222,7 @@ void *PosControl_Task(void *threadID){
 	Vec3 Fdes;
 	Vec3 z_bdes, x_cdes, y_bdes, x_bdes;
 	Vec4 IMU_localData_Quat;
-	qcontrol_defs::PVA localPVA_quadVicon, localPVA_Ref;
+	qcontrol_defs::PVA localPVAEst_quadVicon, localPVA_quadVicon, localPVA_Ref;
 
 	Vec3 z_w;	//z vector of the inertial frame
 	Vec3 z_b;	//z vector of the body frame
@@ -228,14 +252,23 @@ void *PosControl_Task(void *threadID){
 		}
 
 		//Grab attitude estimation
-		pthread_mutex_lock(&IMU_Mutex);
-			IMU_localData_Quat = IMU_Data_Quat;
-		pthread_mutex_unlock(&IMU_Mutex);
+		// pthread_mutex_lock(&IMU_Mutex);
+		// 	IMU_localData_Quat = IMU_Data_Quat;
+		// pthread_mutex_unlock(&IMU_Mutex);
+		pthread_mutex_lock(&PVA_Vicon_Mutex);
+			IMU_localData_Quat = IMU_Data_Quat_ViconYaw;
+		pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
 		//Grab position and velocity estimation
-		pthread_mutex_lock(&PVA_Vicon_Mutex);	
-			localPVA_quadVicon = PVA_quadVicon;
-	  	pthread_mutex_unlock(&PVA_Vicon_Mutex);	
+		pthread_mutex_lock(&PVA_Kalman_Mutex);
+			localPVAEst_quadVicon = PVA_quadKalman;
+		pthread_mutex_unlock(&PVA_Kalman_Mutex);
+	 	pthread_mutex_lock(&PVA_Vicon_Mutex);
+	 		localPVA_quadVicon = PVA_quadVicon;
+	  	pthread_mutex_unlock(&PVA_Vicon_Mutex);
+		// pthread_mutex_lock(&PVA_Vicon_Mutex);	
+		// 	localPVA_quadVicon = PVA_quadVicon;
+	 //  	pthread_mutex_unlock(&PVA_Vicon_Mutex);	
 
 	  	//Grab joystick position and velocity reference
 		pthread_mutex_lock(&posRefJoy_Mutex);	
@@ -251,9 +284,9 @@ void *PosControl_Task(void *threadID){
 	  	e_Pos.v[0] = localPVA_Ref.pos.position.x - localPVA_quadVicon.pos.position.x;
 	  	e_Pos.v[1] = localPVA_Ref.pos.position.y - localPVA_quadVicon.pos.position.y;
 	  	e_Pos.v[2] = localPVA_Ref.pos.position.z - localPVA_quadVicon.pos.position.z;
-	  	e_Vel.v[0] = localPVA_Ref.vel.linear.x - localPVA_quadVicon.vel.linear.x;
-	  	e_Vel.v[1] = localPVA_Ref.vel.linear.y - localPVA_quadVicon.vel.linear.y;
-	  	e_Vel.v[2] = localPVA_Ref.vel.linear.z - localPVA_quadVicon.vel.linear.z;
+	  	e_Vel.v[0] = localPVA_Ref.vel.linear.x - localPVAEst_quadVicon.vel.linear.x;
+	  	e_Vel.v[1] = localPVA_Ref.vel.linear.y - localPVAEst_quadVicon.vel.linear.y;
+	  	e_Vel.v[2] = localPVA_Ref.vel.linear.z - localPVAEst_quadVicon.vel.linear.z;
 	  	
 	  	//Get feedforward vector
 	  	acc_Ref.v[0] = localPVA_Ref.acc.linear.x;
@@ -266,10 +299,13 @@ void *PosControl_Task(void *threadID){
 		Mat3x3 Rbw = Quat2rot(IMU_localData_Quat);
 		z_b = MultiplyMat3x3Vec3(Rbw, z_w); //z vector of the vehicle in inertial frame
 
-		updateErrorPID(&PID_pos, feedForward, e_Pos, e_Vel, dt);
+		//Update data in PID, calculate results
+		pthread_mutex_lock(&PID_Mutex);
+			updateErrorPID(&PID_pos, feedForward, e_Pos, e_Vel, dt);
 
-		//Calculate 3d world desired force for the quadcopter and normalize it
-		Fdes = outputPID(PID_pos);
+			//Calculate 3d world desired force for the quadcopter and normalize it
+			Fdes = outputPID(PID_pos);
+		pthread_mutex_unlock(&PID_Mutex);
 
 		//Desired thrust in body frame
 	    pthread_mutex_lock(&ThrustPosControl_Mutex);
@@ -280,7 +316,7 @@ void *PosControl_Task(void *threadID){
 		z_bdes = normalizeVec3(Fdes);
 		// x_cdes.v[0] = cos(yawDesired); 
 		// x_cdes.v[1] = sin(yawDesired); 
-		x_cdes.v[0] = 0; 
+		x_cdes.v[0] = 1; 
 		x_cdes.v[1] = 0; 
 		x_cdes.v[2] = 0;
 		y_bdes = normalizeVec3(cross(z_bdes, x_cdes));

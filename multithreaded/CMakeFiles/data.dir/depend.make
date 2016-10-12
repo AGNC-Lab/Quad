@@ -692,6 +692,7 @@ CMakeFiles/data.dir/threads/Ros_threads.cpp.o: /usr/include/eigen3/Eigen/src/plu
 CMakeFiles/data.dir/threads/Ros_threads.cpp.o: /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 CMakeFiles/data.dir/threads/Ros_threads.cpp.o: /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 CMakeFiles/data.dir/threads/Ros_threads.cpp.o: control/MatricesAndVectors.h
+CMakeFiles/data.dir/threads/Ros_threads.cpp.o: control/QuatRotEuler.h
 CMakeFiles/data.dir/threads/Ros_threads.cpp.o: kalman.h
 CMakeFiles/data.dir/threads/Ros_threads.cpp.o: pevents/pevents.h
 CMakeFiles/data.dir/threads/Ros_threads.cpp.o: rosserial/geometry_msgs/Accel.h
@@ -759,6 +760,7 @@ CMakeFiles/data.dir/threads/pca_thread.cpp.o: threads/pca_thread.h
 
 CMakeFiles/data.dir/threads/print_thread.cpp.o: threads/print_thread.cpp
 CMakeFiles/data.dir/threads/print_thread.cpp.o: control/MatricesAndVectors.h
+CMakeFiles/data.dir/threads/print_thread.cpp.o: control/PID_3DOF.h
 CMakeFiles/data.dir/threads/print_thread.cpp.o: control/QuatRotEuler.h
 CMakeFiles/data.dir/threads/print_thread.cpp.o: pevents/pevents.h
 CMakeFiles/data.dir/threads/print_thread.cpp.o: rosserial/geometry_msgs/Accel.h

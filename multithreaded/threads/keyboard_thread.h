@@ -18,6 +18,7 @@ extern pthread_mutex_t ThrustJoy_Mutex;
 extern pthread_mutex_t PID_Mutex;
 extern neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_Key6, e_Key7, e_Key8, e_Key9, e_KeyESC;
 extern neosmart_event_t e_Motor_Up, e_Motor_Down, e_Motor_Kill;
+extern neosmart_event_t e_SwitchYawSource;
 extern int threadCount;
 extern int currentState;
 extern float ThrustJoy;

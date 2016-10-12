@@ -55,6 +55,23 @@ void *StateMachineTask(void *threadID){
 				printf("Attitude Mode!\n");
 			}
 		}
+
+		//check if source for yaw should be changed
+		if(WaitForEvent(e_SwitchYawSource,0) == 0){
+			ResetEvent(e_SwitchYawSource);
+			pthread_mutex_lock(&YawSource_Mutex);
+			if(YawSource == _IMU){
+				YawSource = _VICON;
+				pthread_mutex_unlock(&YawSource_Mutex);
+				printf("Yaw data being read from Vicon!\n");
+			}
+			else{
+				YawSource = _IMU;	
+				pthread_mutex_unlock(&YawSource_Mutex);
+				printf("Yaw data being read from IMU!\n");
+			}
+		}	
+		
 			
 		switch(currentState)
 		{

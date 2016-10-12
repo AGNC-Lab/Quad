@@ -32,8 +32,8 @@ void kalman_init()
 {
 
 	dt = 0.005;       // 100 Hz
-  sigma_Q = 3.2;   // constant for Q
-	vicon_R = 0.001; // estimated vicon error
+  sigma_Q = 2.2;   // constant for Q
+	vicon_R = 0.0001; // estimated vicon error
   I_9x9 = Matrix<float, 9, 9>::Identity();
   I_3x3 = Matrix<float, 3, 3>::Identity();
 
@@ -76,12 +76,21 @@ void kalman_init()
 
 }
 
-void kalman_propagate()
+Matrix<float, 6, 1> kalman_propagate()
 {
   // Predicting state and covariance
 
   x_prd = A * x_est;
   p_prd = A * p_est * A.transpose() + Q;
+
+  y = H * x_prd;   // Position estimate
+
+  v = H_v * x_prd; // Velocity estimate
+
+  result << y,
+            v;
+
+  return result;
 
 }
 

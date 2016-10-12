@@ -38,6 +38,7 @@ using namespace std;
 #define PI 3.1415
 
 int currentState = INITIALIZING;
+int YawSource = _IMU;
 
 //Ros handle and IP variable
 ros::NodeHandle  _nh;  
@@ -51,6 +52,7 @@ neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_Key6, e_Key7, e_Key8,
 neosmart_event_t e_buttonX, e_buttonY, e_buttonA, e_buttonB;
 neosmart_event_t e_Motor_Up, e_Motor_Down, e_Motor_Kill;
 neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
+neosmart_event_t e_SwitchYawSource;
 neosmart_event_t e_IMU_trigger;
 neosmart_event_t e_PCA_trigger;
 neosmart_event_t e_AttControl_trigger, e_PosControl_trigger;
@@ -67,12 +69,14 @@ pthread_mutex_t stateMachine_Mutex;
 pthread_mutex_t PVA_Vicon_Mutex;
 pthread_mutex_t PVA_Kalman_Mutex;
 pthread_mutex_t ROS_Mutex;
+pthread_mutex_t YawSource_Mutex;
 
 //Global variables
 float ThrustJoy = 0;
 float ThrustPosControl = 0;
-Vec3 IMU_Data_RPY, IMU_Data_Accel, IMU_Data_AngVel;
-Vec4 IMU_Data_Quat;
+Vec3 IMU_Data_RPY, IMU_Data_RPY_ViconYaw;
+Vec3 IMU_Data_Accel, IMU_Data_AngVel;
+Vec4 IMU_Data_Quat, IMU_Data_QuatNoYaw, IMU_Data_Quat_ViconYaw;
 Vec3 attRefJoy;
 Mat3x3 Rdes_PosControl;
 Vec4 Contr_Input;
@@ -95,8 +99,8 @@ void *rosSpinTask(void *threadID){
 	ros::Subscriber<sensor_msgs::Joy> sub_mp_joy("/joy", handle_mp_joy_msg);
 	_nh.subscribe(sub_mp_joy);	
 
-  	// ros::Subscriber<geometry_msgs::TransformStamped> sub_tform("/vicon/Quad7/Quad7", handle_Vicon);
-  	// _nh.subscribe(sub_tform);
+  	ros::Subscriber<geometry_msgs::TransformStamped> sub_tform("/vicon/Quad7/Quad7", handle_Vicon);
+  	_nh.subscribe(sub_tform);
 
   	while(1){
 		WaitForEvent(e_Timeout,SamplingTime);
@@ -126,21 +130,26 @@ void *rosSpinTask(void *threadID){
 void *rosPublisherTask(void *threadID){
 	printf("rosPublisherTask has started!\n");
 	int SamplingTime = 50;	//Sampling time in milliseconds
-	int localCurrentState;
+	int localCurrentState, localYawSource;
 	Vec3 RPY;
 
 	//ros publisher
   	geometry_msgs::Point RPY_IMU;
   	geometry_msgs::Point RPY_Ref;
   	geometry_msgs::Wrench controlInputs;
+  	qcontrol_defs::PVA PVA_EstimatedPVA;
+  	qcontrol_defs::PVA PVA_Vicon;
 
-  	ros::Publisher imurpy_pub("IMU_RPY", &RPY_IMU);
-  	ros::Publisher Refrpy_pub("IMU_Ref", &RPY_Ref);
+  	ros::Publisher imurpy_pub("Quad_RPY", &RPY_IMU);
+  	ros::Publisher Refrpy_pub("Quad_Ref", &RPY_Ref);
   	ros::Publisher imuWrench_pub("Quad_Inputs", &controlInputs);
+  	ros::Publisher PvaEst_pub("Quad_EstimatedPVA", &PVA_EstimatedPVA);
+  	ros::Publisher PvaVicon_pub("Quad_ViconPVA", &PVA_Vicon);
   	_nh.advertise(imurpy_pub);
   	_nh.advertise(Refrpy_pub);
   	_nh.advertise(imuWrench_pub);
-	
+	_nh.advertise(PvaEst_pub);
+	_nh.advertise(PvaVicon_pub);
 
 	  while(1){
 		WaitForEvent(e_Timeout,SamplingTime);
@@ -155,12 +164,36 @@ void *rosPublisherTask(void *threadID){
 			break;
 		}
 
+		//Check if yaw source should come from IMU of Vicon
+		pthread_mutex_lock(&YawSource_Mutex);
+			localYawSource = YawSource;
+		pthread_mutex_unlock(&YawSource_Mutex);
+
 		//Get IMU roll pitch yaw data
-	  	pthread_mutex_lock(&IMU_Mutex);
-		  	RPY_IMU.x = IMU_Data_RPY.v[0];
-		  	RPY_IMU.y = IMU_Data_RPY.v[1];
-		  	RPY_IMU.z = IMU_Data_RPY.v[2];
-	  	pthread_mutex_unlock(&IMU_Mutex);
+		if (localYawSource == _IMU){
+		  	pthread_mutex_lock(&IMU_Mutex);
+			  	RPY_IMU.x = IMU_Data_RPY.v[0];
+			  	RPY_IMU.y = IMU_Data_RPY.v[1];
+			  	RPY_IMU.z = IMU_Data_RPY.v[2];
+		  	pthread_mutex_unlock(&IMU_Mutex);
+		}
+		else{ //Get IMU roll and pitch; yaw comes from vicon
+			pthread_mutex_lock(&PVA_Vicon_Mutex);
+				RPY_IMU.x = IMU_Data_RPY_ViconYaw.v[0];
+			  	RPY_IMU.y = IMU_Data_RPY_ViconYaw.v[1];
+			  	RPY_IMU.z = IMU_Data_RPY_ViconYaw.v[2];
+			pthread_mutex_unlock(&PVA_Vicon_Mutex);
+		}
+
+		//Get position/velocity estimations
+		pthread_mutex_lock(&PVA_Kalman_Mutex);
+			PVA_EstimatedPVA = PVA_quadKalman;
+		pthread_mutex_unlock(&PVA_Kalman_Mutex);
+
+		//Get position and attitude from vicon
+	 	pthread_mutex_lock(&PVA_Vicon_Mutex);
+	 		PVA_Vicon = PVA_quadVicon;
+	  	pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
 		//Get attitude references
 		if(localCurrentState == ATTITUDE_MODE){
@@ -199,7 +232,8 @@ void *rosPublisherTask(void *threadID){
 		    imurpy_pub.publish( &RPY_IMU);
 		    Refrpy_pub.publish( &RPY_Ref);
 		    imuWrench_pub.publish( &controlInputs);
-		    // _nh.spinOnce();
+		    PvaEst_pub.publish( &PVA_EstimatedPVA);
+		    PvaVicon_pub.publish(&PVA_Vicon);
 	    pthread_mutex_unlock(&ROS_Mutex);
 
   	}
@@ -230,6 +264,7 @@ void *Kalman_Task(void *threadID){
 
 	Eigen::Matrix<float, 6, 1> kalman_state = Eigen::Matrix<float, 6, 1>::Zero();
     Eigen::Matrix<float, 3, 1> z;   // measurement vector
+    qcontrol_defs::PVA localPVA_quadVicon;
 
     kalman_init(); //Initialize kalman filter
 
@@ -238,24 +273,27 @@ void *Kalman_Task(void *threadID){
 		WaitForEvent(e_Timeout,SamplingTime);
 
 		pthread_mutex_lock(&stateMachine_Mutex);
-		
-		localCurrentState = currentState;
-		
+			localCurrentState = currentState;
 		pthread_mutex_unlock(&stateMachine_Mutex);
 
-		kalman_propagate();
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+
+		kalman_state = kalman_propagate();
 
 		//Check system state
 		pthread_mutex_lock(&PVA_Vicon_Mutex);
-
-		z <<  PVA_quadVicon.pos.position.x,
-		      PVA_quadVicon.pos.position.y,
-		      PVA_quadVicon.pos.position.z;
-
-		//current_time = PVA_quadVicon.t;
-
+			localPVA_quadVicon = PVA_quadVicon;
 		pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
+		//Measurement vector z
+		z <<  localPVA_quadVicon.pos.position.x,
+		      localPVA_quadVicon.pos.position.y,
+		      localPVA_quadVicon.pos.position.z;
+
+		//Check if there is a new measurement. If so, update estimation
+		current_time = localPVA_quadVicon.t;
 		if (prev_time.toSec() != current_time.toSec())
 		{
 			kalman_state = kalman_estimate(z);	
@@ -264,21 +302,18 @@ void *Kalman_Task(void *threadID){
 		prev_time = current_time;
 
 		pthread_mutex_lock(&PVA_Kalman_Mutex);
-
-		PVA_quadKalman.pos.position.x = kalman_state(0,0);
-		PVA_quadKalman.pos.position.y = kalman_state(1,0);
-		PVA_quadKalman.pos.position.z = kalman_state(2,0);
-		PVA_quadKalman.vel.linear.x = kalman_state(3,0);
-		PVA_quadKalman.vel.linear.y = kalman_state(4,0);
-		PVA_quadKalman.vel.linear.z = kalman_state(5,0);
-
+			PVA_quadKalman.pos.position.x = kalman_state(0,0);
+			PVA_quadKalman.pos.position.y = kalman_state(1,0);
+			PVA_quadKalman.pos.position.z = kalman_state(2,0);
+			PVA_quadKalman.vel.linear.x = kalman_state(3,0);
+			PVA_quadKalman.vel.linear.y = kalman_state(4,0);
+			PVA_quadKalman.vel.linear.z = kalman_state(5,0);
+			PVA_quadKalman.pos.orientation = localPVA_quadVicon.pos.orientation;
 		pthread_mutex_unlock(&PVA_Kalman_Mutex);
 	  	// kalman_v << kalman_state(3,0) << "," << kalman_state(4,0) << "," << kalman_state(5,0) << "\n";
 	  	// vicon_p << z(0,0) << "," << z(1,0) << "," << z(2,0) << "\n";
 		//check if system should be terminated
-		if(localCurrentState == TERMINATE){
-			break;
-		}
+
   	}
   		
 	printf("Kalman_Task stopping...\n");
@@ -307,7 +342,6 @@ int main(int argc, char *argv[])
 	pthread_t Kalman_Thread;
 	//long IDthreadKeyboard, IDthreadIMU, IDthreadMAG; //Stores ID for threads
 	int ReturnCode;
-	kalman_init(); //Initialize kalman filter
 
 	// kalman_v.open ("kalman_velocity.txt");
 	// vicon_p.open ("vicon_position.txt");
@@ -334,8 +368,11 @@ int main(int argc, char *argv[])
 	PVA_RefJoy.vel.linear.y = 0;
 	PVA_RefJoy.vel.linear.z = 0;
 
-	//Start events
-	e_endInit = CreateEvent(false,false);		//event that signalizes end of initialization
+	//event that signalizes end of initialization
+	e_endInit = CreateEvent(false,false);
+
+	//switch source of yaw (vicon x imu)
+	e_SwitchYawSource = CreateEvent(true,false);
 
 	//Keyboard Events for printing information
 	e_Key1 = CreateEvent(true,false); 			//manual-reset event
@@ -381,6 +418,7 @@ int main(int argc, char *argv[])
 	pthread_mutex_init(&ROS_Mutex, NULL);
 	pthread_mutex_init(&posRefJoy_Mutex, NULL);
 	pthread_mutex_init(&ThrustPosControl_Mutex, NULL);
+	pthread_mutex_init(&YawSource_Mutex, NULL);
 
 	//Load PID parameters from file
 	pthread_mutex_lock(&PID_Mutex);
@@ -545,6 +583,7 @@ int main(int argc, char *argv[])
 	DestroyEvent(e_AttControl_trigger);
 	DestroyEvent(e_PosControl_trigger);
 	DestroyEvent(e_endInit);
+	DestroyEvent(e_SwitchYawSource);
 
 	//Destroy mutexes
 	pthread_mutex_destroy(&IMU_Mutex);
@@ -558,6 +597,7 @@ int main(int argc, char *argv[])
 	pthread_mutex_destroy(&ROS_Mutex);
 	pthread_mutex_destroy(&posRefJoy_Mutex);
 	pthread_mutex_destroy(&ThrustPosControl_Mutex);
+	pthread_mutex_destroy(&YawSource_Mutex);
 
    /* Last thing that main() should do */
 	// vicon_p.close();

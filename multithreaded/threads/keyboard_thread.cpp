@@ -131,6 +131,10 @@ void *KeyboardTask(void *threadID)
 		    //motor kill
 		    SetEvent(e_Motor_Kill);
 		}
+		else if (ch == 'v') { //the 'v' key
+			//Switch attitude measurement vicon / IMU
+		    SetEvent(e_SwitchYawSource);
+		}
 		else if (ch == 27){	//ESC character
 			SetEvent(e_KeyESC);
 			printf("ESC has been activated!\n\n");

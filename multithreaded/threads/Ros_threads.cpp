@@ -2,7 +2,10 @@
 
 #include "threads/Ros_threads.h"
 
-
+Vec3 RPY_Vicon;
+Vec4 Quat_vicon;
+Vec4 IMU_localData_QuatViconYaw, IMU_localData_QuatNoYaw;
+Vec4 Vicon_YawQuat;
 int ButtonX = 0;
 int ButtonY = 0;
 int ButtonA = 0;
@@ -10,13 +13,17 @@ int ButtonB = 0;
 
 void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 	float yaw_ctr_pos, yaw_ctr_neg;
-	int localCurrentState;
-	Vec3 IMU_localData_RPY;
+	int localCurrentState, localYawSource;
+	Vec3 IMU_localData_RPY, IMU_localData_RPY_ViconYaw;
 
 	//Grab attitude estimation
 	pthread_mutex_lock(&IMU_Mutex);
 		IMU_localData_RPY = IMU_Data_RPY;
 	pthread_mutex_unlock(&IMU_Mutex);
+
+	pthread_mutex_lock(&PVA_Vicon_Mutex);
+		IMU_localData_RPY_ViconYaw = IMU_Data_RPY_ViconYaw;
+	pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
 	pthread_mutex_lock(&stateMachine_Mutex);
 		localCurrentState = currentState;
@@ -29,6 +36,10 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 			ThrustJoy = msg.axes[1] * maxThrust_AttMode;
 		pthread_mutex_unlock(&ThrustJoy_Mutex);
 
+		pthread_mutex_lock(&YawSource_Mutex);
+			localYawSource = YawSource;
+		pthread_mutex_unlock(&YawSource_Mutex);
+
 		//Set references
 		pthread_mutex_lock(&attRefJoy_Mutex);	
 			attRefJoy.v[0] = -msg.axes[3]*PI/6; //roll
@@ -37,7 +48,12 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 			yaw_ctr_neg = msg.axes[5];
 			//Set yaw to measured yaw if quad isnt flying
 			if (msg.axes[1] <= 0) {
-		    	attRefJoy.v[2] = IMU_localData_RPY.v[2];
+				if(localYawSource == _IMU){
+					attRefJoy.v[2] = IMU_localData_RPY.v[2];
+				}
+				else if (localYawSource == _VICON){
+					attRefJoy.v[2] = IMU_localData_RPY_ViconYaw.v[2];
+				}
 		    }
 		    else{ //If quad is flying, increment yaw
 		    	if (yaw_ctr_neg < 0) {
@@ -48,6 +64,11 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 				}
 		    }
 		pthread_mutex_unlock(&attRefJoy_Mutex);
+	}
+	else if(localCurrentState == POSITION_JOY_MODE){
+		pthread_mutex_lock(&ThrustJoy_Mutex);
+			ThrustJoy = msg.axes[1] * maxThrust_AttMode;
+		pthread_mutex_unlock(&ThrustJoy_Mutex);
 	}
 	else if(localCurrentState == MOTOR_MODE){ 	//If in motor mode
 		//Set thrust
@@ -62,7 +83,7 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 			attRefJoy.v[2] = IMU_localData_RPY.v[2]; //Set ref to actual IMU value
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
-	else{ //If not in a fly mode, set everything to zero
+	else{ //If not in a flight mode, set everything to zero
 		pthread_mutex_lock(&ThrustJoy_Mutex);
 			ThrustJoy = 0;
 		pthread_mutex_unlock(&ThrustJoy_Mutex);
@@ -102,7 +123,6 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 void handle_Vicon(const geometry_msgs::TransformStamped& msg){
 
  	pthread_mutex_lock(&PVA_Vicon_Mutex);	
-
 		PVA_quadVicon.pos.position.x = msg.transform.translation.x;
 		PVA_quadVicon.pos.position.y = msg.transform.translation.y;
 		PVA_quadVicon.pos.position.z = msg.transform.translation.z;
@@ -113,9 +133,30 @@ void handle_Vicon(const geometry_msgs::TransformStamped& msg){
 		PVA_quadVicon.pos.orientation.x = msg.transform.rotation.x;
 		PVA_quadVicon.pos.orientation.y = msg.transform.rotation.y;
 		PVA_quadVicon.pos.orientation.z = msg.transform.rotation.z;
-
   	pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
+  	//Get yaw from vicon measurement and include it into measured quaternion
+  	Quat_vicon.v[0] = msg.transform.rotation.w;
+  	Quat_vicon.v[1] = msg.transform.rotation.x;
+  	Quat_vicon.v[2] = msg.transform.rotation.y;
+  	Quat_vicon.v[3] = msg.transform.rotation.z;
+  	RPY_Vicon = Quat2RPY(Quat_vicon);
+
+	Vicon_YawQuat.v[0] = cos(RPY_Vicon.v[2]/2);
+	Vicon_YawQuat.v[1] = 0;
+	Vicon_YawQuat.v[2] = 0;
+	Vicon_YawQuat.v[3] = sin(RPY_Vicon.v[2]/2);
+
+	pthread_mutex_lock(&IMU_Mutex);
+		IMU_localData_QuatNoYaw = IMU_Data_QuatNoYaw;
+	pthread_mutex_unlock(&IMU_Mutex);
+
+	IMU_localData_QuatViconYaw = QuaternionProduct(Vicon_YawQuat, IMU_localData_QuatNoYaw);
+
+	pthread_mutex_lock(&PVA_Vicon_Mutex);
+		IMU_Data_Quat_ViconYaw = IMU_localData_QuatViconYaw;
+		IMU_Data_RPY_ViconYaw = Quat2RPY(IMU_localData_QuatViconYaw);
+	pthread_mutex_unlock(&PVA_Vicon_Mutex);
   	// kalman_v << kalman_state(3,0) << "," << kalman_state(4,0) << "," << kalman_state(5,0) << "\n";
   	// vicon_p << z(0,0) << "," << z(1,0) << "," << z(2,0) << "\n";
 

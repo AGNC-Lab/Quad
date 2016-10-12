@@ -5,7 +5,7 @@
 void *IMU_Timer(void *threadID){
 
 	printf("IMU_Timer has started!\n");
-	int SamplingTime = 3;	//Sampling time in milliseconds
+	int SamplingTime = 5;	//Sampling time in milliseconds
 	int localCurrentState;
 
 	//setup();
@@ -38,11 +38,14 @@ void *IMU_Task(void *threadID){
 
 	Vec3 IMU_localData_RPY;
 	Vec4 IMU_localData_Quat;
+	Vec4 IMU_localData_QuatNoYaw;
+	Vec4 IMU_Quat_Yaw; //Quaternion with only yaw
 	Vec4 IMU_Quat_Conversion; //When sitting on the ground, measured attitude indicates 180Deg Roll (need to unroll)
 	IMU_Quat_Conversion.v[0] = cos(PI/2);
 	IMU_Quat_Conversion.v[1] = sin(PI/2);
 	IMU_Quat_Conversion.v[2] = 0;
 	IMU_Quat_Conversion.v[3] = 0;
+
 
 	int calibrate = 0;
 	int cal_amount = 100;
@@ -88,18 +91,24 @@ void *IMU_Task(void *threadID){
 		
 		IMU_localData_Quat = QuaternionProduct(IMU_Quat_Conversion, IMU_localData_Quat); //Unroll vehicle		
 		IMU_localData_RPY = Quat2RPY(IMU_localData_Quat);
-		//Do whatever we need here below
+
+		//Take off yaw from quaternion
+		IMU_Quat_Yaw.v[0] = cos(IMU_localData_RPY.v[2]/2);
+		IMU_Quat_Yaw.v[1] = 0;
+		IMU_Quat_Yaw.v[2] = 0;
+		IMU_Quat_Yaw.v[3] = -sin(IMU_localData_RPY.v[2]/2);
+		IMU_localData_QuatNoYaw = QuaternionProduct(IMU_Quat_Yaw, IMU_localData_Quat);
+		
 		pthread_mutex_lock(&IMU_Mutex);
-		IMU_Data_RPY.v[0] = IMU_localData_RPY.v[0];//*180/PI;
-		IMU_Data_RPY.v[1] = IMU_localData_RPY.v[1];//*180/PI;
-		IMU_Data_RPY.v[2] = IMU_localData_RPY.v[2];//*180/PI;
+		IMU_Data_RPY = IMU_localData_RPY;
 		IMU_Data_Quat = IMU_localData_Quat;
-		IMU_Data_Accel.v[0] = (float)aa.x;
-		IMU_Data_Accel.v[1] = (float)aa.y;
-		IMU_Data_Accel.v[2] = (float)aa.z;
-		IMU_Data_AngVel.v[1] = ((float)gx/131 - Vel_Cal_X)*PI/180;
-		IMU_Data_AngVel.v[0] = ((float)gy/131 - Vel_Cal_Y)*PI/180;
-		IMU_Data_AngVel.v[2] = -((float)gz/131 - Vel_Cal_Z)*PI/180;
+		IMU_Data_QuatNoYaw = IMU_localData_QuatNoYaw;
+		IMU_Data_Accel.v[0] = (double)aa.x;
+		IMU_Data_Accel.v[1] = (double)aa.y;
+		IMU_Data_Accel.v[2] = (double)aa.z;
+		IMU_Data_AngVel.v[1] = ((double)gx/131 - Vel_Cal_X)*PI/180;
+		IMU_Data_AngVel.v[0] = ((double)gy/131 - Vel_Cal_Y)*PI/180;
+		IMU_Data_AngVel.v[2] = -((double)gz/131 - Vel_Cal_Z)*PI/180;
 		pthread_mutex_unlock(&IMU_Mutex);
 	}
 	

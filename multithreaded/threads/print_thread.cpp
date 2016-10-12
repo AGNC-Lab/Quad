@@ -97,9 +97,9 @@ void *PrintTask(void *threadID){
 	    }
 	    if(WaitForEvent(e_Key8, 0) == 0)
 	    {
-			// pthread_mutex_lock(&PID_Mutex);
-			// 	PrintVec3(PID_att.e_integ, "e_integ Att");
-			// pthread_mutex_unlock(&PID_Mutex);
+			pthread_mutex_lock(&PID_Mutex);
+				PrintVec3(PID_att.e_integ, "e_integ Att");
+			pthread_mutex_unlock(&PID_Mutex);
 	     }
 
 
