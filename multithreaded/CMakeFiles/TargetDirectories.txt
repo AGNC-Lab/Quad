@@ -1,1 +1,0 @@
-/home/sahabi/AGNC/Quad/multithreaded/CMakeFiles/data.out.dir
