@@ -17,14 +17,13 @@ make
 
 ## Preparing the quadrotor
 
-Power it up
-connect to it
+1. Power it up
+2. Connect to it:
 ```shell
-ssh root@192.168.1.2**
+ssh root@192.168.1.2xx
 root@192.168.1.202\'s password: **
 ```
-
-Move the files data.out, configAtt.txt and configPos.txt to the same directory in the quad.
+3. Move the files data.out, configAtt.txt and configPos.txt to the same directory in the quad.
 
 ## Pre-flight routine
 
@@ -39,6 +38,6 @@ Move the files data.out, configAtt.txt and configPos.txt to the same directory i
 The following joystick buttons corresponds to:
 
 * A Motor Mode
-* B 
+* B None
 * X Position Control
 * Y Attitude Mode
