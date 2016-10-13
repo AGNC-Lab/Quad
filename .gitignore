@@ -37,3 +37,7 @@
 
 # Build
 build
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+CMakeFiles
