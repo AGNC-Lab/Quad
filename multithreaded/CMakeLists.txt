@@ -29,7 +29,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -O3 -Wextra -pthread")
 add_definitions(-DPOSIX_ENV)
 add_definitions(-DSUPPRESS_RDWR_ERROR_CHECKING)
 add_definitions(-DSUPPRESS_TIMER_SLIP_WARNINGS)
-add_executable(data ${SRC_FILES})
+add_executable(data.out ${SRC_FILES})
 target_link_libraries(data pthread)
 target_link_libraries(data rt)
 
