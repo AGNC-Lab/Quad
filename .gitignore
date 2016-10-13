@@ -34,3 +34,6 @@
 # Tildes
 *.md~
 *.*~
+
+# Build
+build
