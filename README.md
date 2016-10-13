@@ -38,7 +38,7 @@ Move the files data.out, configAtt.txt and configPos.txt to the same directory i
 
 The following joystick buttons corresponds to:
 
--- A Motor Mode
--- B 
--- X Position Control
--- Y Attitude Mode
+* A Motor Mode
+* B 
+* X Position Control
+* Y Attitude Mode
