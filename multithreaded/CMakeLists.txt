@@ -30,6 +30,6 @@ add_definitions(-DPOSIX_ENV)
 add_definitions(-DSUPPRESS_RDWR_ERROR_CHECKING)
 add_definitions(-DSUPPRESS_TIMER_SLIP_WARNINGS)
 add_executable(data.out ${SRC_FILES})
-target_link_libraries(data pthread)
-target_link_libraries(data rt)
+target_link_libraries(data.out pthread)
+target_link_libraries(data.out rt)
 
