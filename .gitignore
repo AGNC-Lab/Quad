@@ -32,8 +32,7 @@
 *.app
 
 # Tildes
-*.md~
-*.*~
+*~
 
 # Build
 build
