@@ -261,9 +261,11 @@ void *Kalman_Task(void *threadID){
 	ros::Time current_time = ros::Time(0,0);
 	ros::Time prev_time = ros::Time(0,0);
 
-	Eigen::Matrix<float, 6, 1> kalman_state = Eigen::Matrix<float, 6, 1>::Zero();
+	Eigen::Matrix<float, 9, 1> kalman_state = Eigen::Matrix<float, 9, 1>::Zero();
     Eigen::Matrix<float, 3, 1> z;   // measurement vector
     qcontrol_defs::PVA localPVA_quadVicon;
+    Vec3 IMU_localData_Accel;
+    Vec3 prev_IMU_localData_Accel;
 
     kalman_init(); //Initialize kalman filter
 
@@ -274,6 +276,7 @@ void *Kalman_Task(void *threadID){
 		pthread_mutex_lock(&stateMachine_Mutex);
 			localCurrentState = currentState;
 		pthread_mutex_unlock(&stateMachine_Mutex);
+
 
 		if(localCurrentState == TERMINATE){
 			break;
@@ -286,19 +289,37 @@ void *Kalman_Task(void *threadID){
 			localPVA_quadVicon = PVA_quadVicon;
 		pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
-		//Measurement vector z
-		z <<  localPVA_quadVicon.pos.position.x,
-		      localPVA_quadVicon.pos.position.y,
-		      localPVA_quadVicon.pos.position.z;
+		pthread_mutex_lock(&IMU_Mutex);
+			IMU_localData_Accel = IMU_Data_Accel;
+		pthread_mutex_unlock(&IMU_Mutex);
+
 
 		//Check if there is a new measurement. If so, update estimation
 		current_time = localPVA_quadVicon.t;
+
 		if (prev_time.toSec() != current_time.toSec())
 		{
-			kalman_state = kalman_estimate(z);	
+			//Measurement vector z
+			z <<  localPVA_quadVicon.pos.position.x,
+			      localPVA_quadVicon.pos.position.y,
+			      localPVA_quadVicon.pos.position.z;
+
+			kalman_state = kalman_estimate_pos(z);	
 		}
 
 		prev_time = current_time;
+
+		if (prev_IMU_localData_Accel != IMU_localData_Accel)
+		{
+			//Measurement vector z
+			z <<  IMU_localData_Accel.v[0],
+			      IMU_localData_Accel.v[1],
+			      IMU_localData_Accel.v[2];
+
+			kalman_state = kalman_estimate_acc(z);	
+		}
+
+		prev_IMU_localData_Accel = IMU_localData_Accel;
 
 		pthread_mutex_lock(&PVA_Kalman_Mutex);
 			PVA_quadKalman.pos.position.x = kalman_state(0,0);
@@ -307,6 +328,9 @@ void *Kalman_Task(void *threadID){
 			PVA_quadKalman.vel.linear.x = kalman_state(3,0);
 			PVA_quadKalman.vel.linear.y = kalman_state(4,0);
 			PVA_quadKalman.vel.linear.z = kalman_state(5,0);
+			PVA_quadKalman.acc.linear.x = kalman_state(6,0);
+			PVA_quadKalman.acc.linear.y = kalman_state(7,0);
+			PVA_quadKalman.acc.linear.z = kalman_state(8,0);
 			PVA_quadKalman.pos.orientation = localPVA_quadVicon.pos.orientation;
 		pthread_mutex_unlock(&PVA_Kalman_Mutex);
 	  	// kalman_v << kalman_state(3,0) << "," << kalman_state(4,0) << "," << kalman_state(5,0) << "\n";
