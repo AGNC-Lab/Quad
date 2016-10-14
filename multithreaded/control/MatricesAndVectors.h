@@ -17,8 +17,17 @@ struct Vec4{
 
 struct Vec3{
 	double v[3];
+  bool operator==(const Vec3& rhs) const
+  {
+     return (v[0] == rhs.v[0])
+     && (v[1] == rhs.v[1])
+     && (v[2] == rhs.v[2]);
+  }
+  bool operator!=(const Vec3 rhs) const
+  {
+    return !operator==(rhs);
+  }
 };
-
 
 //Functions
 
