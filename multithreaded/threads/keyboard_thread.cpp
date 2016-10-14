@@ -117,7 +117,6 @@ void *KeyboardTask(void *threadID)
 			pthread_mutex_lock(&PID_Mutex);
 				updatePar(&PID_att, &PID_angVel, &PID_pos);
 			pthread_mutex_unlock(&PID_Mutex);
-		    printf("Updated parameters! \n");
 		}
 		else if (ch == 'w') { //the 'w' key
 		    //motor up

@@ -7,10 +7,16 @@
 #include "control/QuatRotEuler.h"
 #include "threads/stateMachine.h"
 #include "control/MatricesAndVectors.h"
+#include <sstream>
+#include <string>
+#include <vector>
+#include <fstream>
 
 #define PI 3.1415
 
-
+using std::string;
+using std::ostringstream;
+using namespace std;
 using namespace neosmart;
 
 extern pthread_mutex_t stateMachine_Mutex;
@@ -32,5 +38,8 @@ void *IMU_Task(void *threadID);
 
 //Timer
 void *IMU_Timer(void *threadID);
+
+//get accelerometer calibration parameters
+void AccCalibParam(Vec3 *AccCalib, double *radius);
 
 #endif

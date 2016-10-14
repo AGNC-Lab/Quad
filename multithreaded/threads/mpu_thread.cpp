@@ -67,6 +67,12 @@ void *IMU_Task(void *threadID){
 	Vel_Cal_Z /= cal_amount;
 	Vel_Cal_Y /= cal_amount;
 
+	//Get calibration parameters for accelerometer 
+	Vec3 AccCalib;
+	AccCalib.v[0] = 0; AccCalib.v[1] = 0; AccCalib.v[2] = 0;
+	double radius = 8192;
+	AccCalibParam(&AccCalib, &radius);
+	printf("Bias_x %f\nBias_y %f\nBias_z %f\nRadius %f\n",AccCalib.v[0],AccCalib.v[1],AccCalib.v[2],radius);
 
 	while(1){
 		
@@ -115,4 +121,54 @@ void *IMU_Task(void *threadID){
 	printf("IMU_Task stopping...\n");
 	threadCount -= 1;
 	pthread_exit(NULL);
+}
+
+//Helper functions to parse the config file
+void split_(const string &s, char delim, vector<string> &elems) {
+    stringstream ss(s);
+    string item;
+    while (getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+}
+
+
+vector<string> split_(const string &s, char delim) {
+    vector<string> elems;
+    split_(s, delim, elems);
+    return elems;
+}
+
+void AccCalibParam(Vec3 *AccCalib, double *radius) {
+
+    string line;
+    vector<string> line_vec;
+
+    //Get parameters for attitude controller
+    ifstream myfile ("/home/root/AccCalib.txt");
+    if (myfile.is_open()) {
+		while (getline (myfile ,line)) {
+		    line_vec = split_(line, ' ');
+		    if (line_vec[0] == "bias_x") {
+	            AccCalib->v[0] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "bias_y") {
+				AccCalib->v[1] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "bias_z") {
+				AccCalib->v[2] = atof(line_vec[2].c_str());
+		    }
+		    else if (line_vec[0] == "Radius") {
+	            *radius = atof(line_vec[2].c_str());
+		    }
+		}
+		myfile.close();
+
+		printf("Done loading accelerometer parameters\n");
+    }
+    else {
+		printf("Unable to open file /home/root/AccCalib.txt \n"); 
+    }
+   
+
 }
