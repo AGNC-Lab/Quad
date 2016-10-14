@@ -137,81 +137,18 @@ void setup() {
 
 int getDMP() {
     // if programming failed, don't try to do anything
-    while(true) {
+    //while(true) {
 	if (dmpHeadReady)
 	{
 	    // get current FIFO count
 	    headFifoCount = mpu_head.getFIFOCount();
 
-	    if (headFifoCount == 1024) {
-		// reset so we can continue cleanly
-		mpu_head.resetFIFO();
-		printf("FIFO overflow!\n");
+        if (headFifoCount >= 42) {
+        // read a packet from FIFO
+        mpu_head.getFIFOBytes(headFifoBuffer, headPacketSize);
 
-		// otherwise, check for DMP data ready interrupt (this should happen frequently)
-	    } else if (headFifoCount >= 42) {
-		// read a packet from FIFO
-		mpu_head.getFIFOBytes(headFifoBuffer, headPacketSize);
-
-                //#ifdef OUTPUT_READABLE_QUATERNION
-                // display quaternion values in easy matrix form: w x y z
-                //mpu_head.dmpGetQuaternion(&q, headFifoBuffer);
-                //printf("quat %7.2f %7.2f %7.2f %7.2f    ", q.w,q.x,q.y,q.z);
-                //#endif
-
-                //#ifdef OUTPUT_READABLE_EULER
-                //display Euler angles in degrees
-                //mpu_head.dmpGetQuaternion(&q, headFifoBuffer);
-                //mpu_head.dmpGetEuler(euler, &q);
-		// printf("euler %7.2f %7.2f %7.2f    ", euler[0] * 180/M_PI, euler[1] * 180/M_PI, euler[2] * 180/M_PI);
-                //#endif
-
-		//#ifdef OUTPUT_READABLE_YAWPITCHROLL
-                // display Euler angles in degrees
-                //mpu_head.dmpGetQuaternion(&q, headFifoBuffer);
-                //mpu_head.dmpGetGravity(&gravity, &q);
-                //mpu_head.dmpGetYawPitchRoll(ypr, &q, &gravity);
-
-		//return 1;
-                //printf("ypr  %7.2f %7.2f %7.2f    ", ypr[0] * 180/M_PI, ypr[1] * 180/M_PI, ypr[2] * 180/M_PI);
-		// #endif
-
-                //#ifdef OUTPUT_READABLE_REALACCEL
-                // display real acceleration, adjusted to remove gravity
-		//mpu_head.dmpGetQuaternion(&q, headFifoBuffer);
-		//mpu_head.dmpGetAccel(&aa, headFifoBuffer);
-                //mpu_head.dmpGetGravity(&gravity, &q);
-                //mpu_head.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-                //printf("areal %6d %6d %6d    ", aaReal.x, aaReal.y, aaReal.z);
-                //#endif
-
-                //#ifdef OUTPUT_READABLE_WORLDACCEL
-                // display initial world-frame acceleration, adjusted to remove gravity
-                // and rotated based on known orientation from quaternion
-		//mpu_head.dmpGetQuaternion(&q, headFifoBuffer);
-                //mpu_head.dmpGetAccel(&aa, headFifoBuffer);
-                //mpu_head.dmpGetGravity(&gravity, &q);
-                //mpu_head.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
-                //printf("aworld %6d %6d %6d    ", aaWorld.x, aaWorld.y, aaWorld.z);
-                //#endif
-
-                //#ifdef OUTPUT_TEAPOT
-                // display quaternion values in InvenSense Teapot demo format:
-                //teapotPacket[2] = headFifoBuffer[0];
-                //teapotPacket[3] = headFifoBuffer[1];
-                //teapotPacket[4] = headFifoBuffer[4];
-                //teapotPacket[5] = headFifoBuffer[5];
-                //teapotPacket[6] = headFifoBuffer[8];
-                //teapotPacket[7] = headFifoBuffer[9];
-                //teapotPacket[8] = headFifoBuffer[12];
-		//teapotPacket[9] = headFifoBuffer[13];
-                //Serial.write(teapotPacket, 14);
-                //teapotPacket[11]++; // packetCount, loops at 0xFF on purpose
-                //#endif
-		//printf("\n");
-
-		mpu_head.getRotation(&gx, &gy, &gz);
-		mpu_head.dmpGetQuaternion(&q, headFifoBuffer);
+        mpu_head.getRotation(&gx, &gy, &gz);
+        mpu_head.dmpGetQuaternion(&q, headFifoBuffer);
         mpu_head.dmpGetGravity(&gravity, &q);
         mpu_head.dmpGetYawPitchRoll(ypr, &q, &gravity);
         mpu_head.dmpGetAccel(&aa, headFifoBuffer);
@@ -220,12 +157,21 @@ int getDMP() {
         // printf("areal %f %f %f  \n", gravity.x, gravity.y, gravity.z);
         // printf("areal %d %d %d  \n", aa.x, aa.y, aa.z);
 
-		return 1;
+        return 1;
 
+        }
 
-	    }
+	    if (headFifoCount == 1024) {
+		// reset so we can continue cleanly
+		mpu_head.resetFIFO();
+		printf("FIFO overflow!\n");
+
+        return 0;
+
+		// otherwise, check for DMP data ready interrupt (this should happen frequently)
+	    } 
 	} 
-    }
+    return 0;
 }
 
 #endif

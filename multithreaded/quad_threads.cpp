@@ -497,21 +497,21 @@ int main(int argc, char *argv[])
 	else
 		threadCount += 1;
 
-	//Start IMU task
-	if (ReturnCode = pthread_create(&IMU_Thread, NULL, IMU_Task, NULL)){
-		printf("Start IMU_Task failed; return code from pthread_create() is %d\n", ReturnCode);
-		exit(-1);
-	}
-	else
-		threadCount += 1;
+	// //Start IMU task
+	// if (ReturnCode = pthread_create(&IMU_Thread, NULL, IMU_Task, NULL)){
+	// 	printf("Start IMU_Task failed; return code from pthread_create() is %d\n", ReturnCode);
+	// 	exit(-1);
+	// }
+	// else
+	// 	threadCount += 1;
 
-	//Start IMU timer task
-	if (ReturnCode = pthread_create(&IMU_TimerThread, NULL, IMU_Timer, NULL)){
-		printf("Start IMU_TimerTask failed; return code from pthread_create() is %d\n", ReturnCode);
-		exit(-1);
-	}
-	else
-		threadCount += 1;
+	// //Start IMU timer task
+	// if (ReturnCode = pthread_create(&IMU_TimerThread, NULL, IMU_Timer, NULL)){
+	// 	printf("Start IMU_TimerTask failed; return code from pthread_create() is %d\n", ReturnCode);
+	// 	exit(-1);
+	// }
+	// else
+	// 	threadCount += 1;
 
 	//Start PCA task
 	if (ReturnCode = pthread_create(&PCA_Thread, NULL, PCA_Task, NULL)){
