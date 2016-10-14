@@ -69,6 +69,12 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 		pthread_mutex_lock(&ThrustJoy_Mutex);
 			ThrustJoy = msg.axes[1] * maxThrust_AttMode;
 		pthread_mutex_unlock(&ThrustJoy_Mutex);
+		pthread_mutex_lock(&posRefJoy_Mutex);	
+			PVA_RefJoy.pos.position.x += msg.axes[4]*maxVel_PosMode/20; //20hz
+			PVA_RefJoy.pos.position.y += msg.axes[3]*maxVel_PosMode/20;
+			PVA_RefJoy.vel.linear.x = msg.axes[4]*maxVel_PosMode;
+			PVA_RefJoy.vel.linear.y = msg.axes[3]*maxVel_PosMode;
+	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
 	}
 	else if(localCurrentState == MOTOR_MODE){ 	//If in motor mode
 		//Set thrust

@@ -54,7 +54,7 @@ void *AttControl_Task(void *threadID){
 	Vec3 IMU_localData_RPY;
 	Vec3 inputTorque;
 	Vec4 PCA_localData;
-	float localThrust;
+	float localThrust = 0;
 	int localCurrentState;
 	int localYawSource;
 
@@ -85,22 +85,32 @@ void *AttControl_Task(void *threadID){
 			break;
 		}
 
-		//Throttle
-	    pthread_mutex_lock(&ThrustJoy_Mutex);
-			localThrust = ThrustJoy;
-		pthread_mutex_unlock(&ThrustJoy_Mutex);
-
 		//Grab attitude reference
 		if(localCurrentState == ATTITUDE_MODE){
 			pthread_mutex_lock(&attRefJoy_Mutex);	
 			    localAttRef = attRefJoy;
 		    pthread_mutex_unlock(&attRefJoy_Mutex);
+			//Throttle
+		    pthread_mutex_lock(&ThrustJoy_Mutex);
+				localThrust = ThrustJoy;
+			pthread_mutex_unlock(&ThrustJoy_Mutex);
 		    Rdes = RPY2Rot(localAttRef.v[0], localAttRef.v[1], localAttRef.v[2]);
 		}
 		else if (localCurrentState == POSITION_JOY_MODE){
 			pthread_mutex_lock(&attRefPosControl_Mutex);
 				Rdes = Rdes_PosControl;
 			pthread_mutex_unlock(&attRefPosControl_Mutex);
+		    pthread_mutex_lock(&ThrustPosControl_Mutex);
+				localThrust = ThrustPosControl;
+			pthread_mutex_unlock(&ThrustPosControl_Mutex);
+		}
+		else if (localCurrentState == MOTOR_MODE){
+		    pthread_mutex_lock(&ThrustJoy_Mutex);
+				localThrust = ThrustJoy;
+			pthread_mutex_unlock(&ThrustJoy_Mutex);
+		}
+		else{
+			localThrust = 0;
 		}
 
 
@@ -212,8 +222,8 @@ void *PosControl_Task(void *threadID){
 	printf("PosControl_Task has started!\n");
 
 	float dt = 0.050; 			//Sampling time
-	double m = 0.26, gz = 9.81;  //Mass and gravity for quadcopter
-	double nominalThrust = 1.0;
+	double m = 0.26, g_z = 9.81;  //Mass and gravity for quadcopter
+	double nominalThrust = 0.8;
 	int localCurrentState;
 	float yawDesired;
 	Vec3 e_Pos, e_Vel; 			//error in position and velocity
@@ -302,6 +312,11 @@ void *PosControl_Task(void *threadID){
 		//Update data in PID, calculate results
 		pthread_mutex_lock(&PID_Mutex);
 			updateErrorPID(&PID_pos, feedForward, e_Pos, e_Vel, dt);
+
+			//Dont integrate integrator if not in POS_Control mode
+			if (localCurrentState != POSITION_JOY_MODE){
+				resetIntegralErrorPID(&PID_pos);
+			}
 
 			//Calculate 3d world desired force for the quadcopter and normalize it
 			Fdes = outputPID(PID_pos);

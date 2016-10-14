@@ -687,7 +687,7 @@ uint8_t MPU6050::dmpInitialize() {
             //Setting external frame sync to TEMP_OUT_L[0]...
             setExternalFrameSync(MPU6050_EXT_SYNC_TEMP_OUT_L);
 
-            //Setting DLPF bandwidth to 5sHz...
+            //Setting DLPF (low pass filter) bandwidth to 5sHz...
             setDLPFMode(MPU6050_DLPF_BW_42);
 
             //Setting gyro sensitivity to +/- 2000 deg/sec...
@@ -772,7 +772,7 @@ uint8_t MPU6050::dmpInitialize() {
             printf("Waiting for FIFO count > 2...\n");
             while ((fifoCount = getFIFOCount()) < 3);
 
-            printf("Current FIFO count=%d",fifoCount);
+            printf("Current FIFO count=%d\n",fifoCount);
             
             //Reading FIFO data...
             getFIFOBytes(fifoBuffer, fifoCount);

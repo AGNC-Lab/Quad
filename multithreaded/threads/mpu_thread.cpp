@@ -37,6 +37,7 @@ void *IMU_Task(void *threadID){
 	printf("IMU_Task has started!\n");
 
 	Vec3 IMU_localData_RPY;
+	Vec3 IMU_localData_Accel;
 	Vec4 IMU_localData_Quat;
 	Vec4 IMU_localData_QuatNoYaw;
 	Vec4 IMU_Quat_Yaw; //Quaternion with only yaw
@@ -45,27 +46,26 @@ void *IMU_Task(void *threadID){
 	IMU_Quat_Conversion.v[1] = sin(PI/2);
 	IMU_Quat_Conversion.v[2] = 0;
 	IMU_Quat_Conversion.v[3] = 0;
-
-
-	int calibrate = 0;
-	int cal_amount = 100;
-	float Vel_Cal_X = 0;
-	float Vel_Cal_Y = 0;
-	float Vel_Cal_Z = 0;
 	int localCurrentState;
+	float g_cons = 9.81; //Gravity constant
 
 	setup();
 
-	while (calibrate < cal_amount) {
+	//Calibrate gyroscope
+	int cal_amount = 100; //Number of samples to calibrate IMU data
+	Vec3 AngVel_Cal;
+	AngVel_Cal.v[0] = 0; AngVel_Cal.v[1] = 0; AngVel_Cal.v[2] = 0;
+
+	for (int i = 0; i < cal_amount; i++) {
 	    getDMP();
-	    Vel_Cal_X +=  (float)gx/131;
-	    Vel_Cal_Y +=  (float)gy/131;
-	    Vel_Cal_Z +=  (float)gz/131;
-	    calibrate++;
+	    AngVel_Cal.v[0] +=  (float)gx/131;
+	    AngVel_Cal.v[1] +=  (float)gy/131;
+	    AngVel_Cal.v[2] +=  (float)gz/131;
 	}
-	Vel_Cal_X /= cal_amount;
-	Vel_Cal_Z /= cal_amount;
-	Vel_Cal_Y /= cal_amount;
+	AngVel_Cal.v[0] /= cal_amount;
+	AngVel_Cal.v[1] /= cal_amount;
+	AngVel_Cal.v[2] /= cal_amount;
+	
 
 	//Get calibration parameters for accelerometer 
 	Vec3 AccCalib;
@@ -104,17 +104,21 @@ void *IMU_Task(void *threadID){
 		IMU_Quat_Yaw.v[2] = 0;
 		IMU_Quat_Yaw.v[3] = -sin(IMU_localData_RPY.v[2]/2);
 		IMU_localData_QuatNoYaw = QuaternionProduct(IMU_Quat_Yaw, IMU_localData_Quat);
+
+		//Extract gravity from accelerometer
+		// Acc = g*(accelerometer - calib)/radius - gravity)
+		IMU_localData_Accel.v[0] = -g_cons*((( (double)aa.y - AccCalib.v[1])/radius) - gravity.y);
+		IMU_localData_Accel.v[1] = -g_cons*((( (double)aa.x - AccCalib.v[0])/radius) - gravity.x);
+		IMU_localData_Accel.v[2] = g_cons*((( (double)aa.z - AccCalib.v[2])/radius) - gravity.z);
 		
 		pthread_mutex_lock(&IMU_Mutex);
-		IMU_Data_RPY = IMU_localData_RPY;
-		IMU_Data_Quat = IMU_localData_Quat;
-		IMU_Data_QuatNoYaw = IMU_localData_QuatNoYaw;
-		IMU_Data_Accel.v[0] = (double)aa.x;
-		IMU_Data_Accel.v[1] = (double)aa.y;
-		IMU_Data_Accel.v[2] = (double)aa.z;
-		IMU_Data_AngVel.v[1] = ((double)gx/131 - Vel_Cal_X)*PI/180;
-		IMU_Data_AngVel.v[0] = ((double)gy/131 - Vel_Cal_Y)*PI/180;
-		IMU_Data_AngVel.v[2] = -((double)gz/131 - Vel_Cal_Z)*PI/180;
+			IMU_Data_RPY = IMU_localData_RPY;
+			IMU_Data_Quat = IMU_localData_Quat;
+			IMU_Data_QuatNoYaw = IMU_localData_QuatNoYaw;
+			IMU_Data_Accel = IMU_localData_Accel;
+			IMU_Data_AngVel.v[1] =  ((double)gx/131)*PI/180;
+			IMU_Data_AngVel.v[0] =  ((double)gy/131)*PI/180;
+			IMU_Data_AngVel.v[2] = -((double)gz/131)*PI/180;
 		pthread_mutex_unlock(&IMU_Mutex);
 	}
 	

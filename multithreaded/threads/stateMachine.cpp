@@ -2,6 +2,7 @@
 
 void *StateMachineTask(void *threadID){
 	int localCurrentState;
+	int localYawSource;
 
 	printf("Initializing system... \n");
 
@@ -12,6 +13,10 @@ void *StateMachineTask(void *threadID){
 		pthread_mutex_lock(&stateMachine_Mutex);
 			localCurrentState = currentState;
 		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		pthread_mutex_lock(&YawSource_Mutex);
+			localYawSource = YawSource;
+		pthread_mutex_unlock(&YawSource_Mutex);
 
 		if(localCurrentState == INITIALIZING){
 			if(WaitForEvent(e_endInit,0) == 0){
@@ -42,10 +47,16 @@ void *StateMachineTask(void *threadID){
 			}
 			if(WaitForEvent(e_buttonX,0) == 0){
 				ResetEvent(e_buttonX);
-				pthread_mutex_lock(&stateMachine_Mutex);
-				currentState = POSITION_JOY_MODE;
-				pthread_mutex_unlock(&stateMachine_Mutex);
-				printf("Position Joy Mode!\n");
+					if(localYawSource == _VICON){
+						pthread_mutex_lock(&stateMachine_Mutex);
+							currentState = POSITION_JOY_MODE;
+						pthread_mutex_unlock(&stateMachine_Mutex);
+						printf("Position Joy Mode!\n");
+					}
+					else{
+						printf("Can't Switch into Position Joy Mode! Get data from Vicon by pushing 'v' in the Keyboard\n");
+					}
+				
 			}
 			if(WaitForEvent(e_buttonY,0) == 0){
 				ResetEvent(e_buttonY);
@@ -59,14 +70,15 @@ void *StateMachineTask(void *threadID){
 		//check if source for yaw should be changed
 		if(WaitForEvent(e_SwitchYawSource,0) == 0){
 			ResetEvent(e_SwitchYawSource);
-			pthread_mutex_lock(&YawSource_Mutex);
-			if(YawSource == _IMU){
-				YawSource = _VICON;
+			if(localYawSource == _IMU){
+				pthread_mutex_lock(&YawSource_Mutex);
+					YawSource = _VICON;
 				pthread_mutex_unlock(&YawSource_Mutex);
 				printf("Yaw data being read from Vicon!\n");
 			}
 			else{
-				YawSource = _IMU;	
+				pthread_mutex_lock(&YawSource_Mutex);
+					YawSource = _IMU;	
 				pthread_mutex_unlock(&YawSource_Mutex);
 				printf("Yaw data being read from IMU!\n");
 			}

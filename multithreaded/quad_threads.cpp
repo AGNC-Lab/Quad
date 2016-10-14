@@ -255,7 +255,7 @@ void *rosPublisherTask(void *threadID){
 // } 
 
 void *Kalman_Task(void *threadID){
-	int SamplingTime = 5;	//Sampling time in milliseconds
+	int SamplingTime = 10;	//Sampling time in milliseconds
 	int localCurrentState;
 
 	ros::Time current_time = ros::Time(0,0);

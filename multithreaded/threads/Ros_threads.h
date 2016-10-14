@@ -23,6 +23,7 @@ extern pthread_mutex_t Contr_Input_Mutex;
 extern pthread_mutex_t stateMachine_Mutex;
 extern pthread_mutex_t PVA_Vicon_Mutex;
 extern pthread_mutex_t ROS_Mutex;
+extern pthread_mutex_t posRefJoy_Mutex;
 
 //Global variables
 extern float ThrustJoy;
@@ -35,6 +36,7 @@ extern int threadCount;		//Counts active threads
 #define PI 3.1415
 #define maxThrust_AttMode 1.5
 #define maxThrust_MotorMode 0.3
+#define maxVel_PosMode 0.5
 #define yaw_Inc PI/90
 
 

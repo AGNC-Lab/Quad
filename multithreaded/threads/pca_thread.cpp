@@ -34,14 +34,6 @@ void *PCA_Timer(void *threadID){
 	int SamplingTime = 5;	//Sampling time in milliseconds
 	int localCurrentState;
 
-	pca.initialize();
-	float freq = 500;
-
-	if(pca.pwmFreq(freq)!=1)
-	    printf("ERROR: setting pwm frequency\n");
-	else
-	    printf("Frequency set to %f Hz.\n", freq);
-
 	
 	while(1){
 		WaitForEvent(e_Timeout,SamplingTime);
@@ -60,7 +52,6 @@ void *PCA_Timer(void *threadID){
 	}
 	
 	printf("PCA_Timer stopping...\n");
-	pca.resetDev();
 	threadCount -= 1;
 	pthread_exit(NULL);
 }
@@ -69,6 +60,16 @@ void *PCA_Task(void *threadID){
 	printf("PCA_Task has started!\n");
 	Vec4 localPCA_Data;
 	int localCurrentState;
+
+	WaitForEvent(e_PCA_trigger,-1); //Wait until trigger thread finishes loading
+
+	pca.initialize();
+	float freq = 500;
+
+	if(pca.pwmFreq(freq)!=1)
+	    printf("ERROR: setting pwm frequency\n");
+	else
+	    printf("Frequency set to %f Hz.\n", freq);
 
 	while(1){
 		
@@ -104,6 +105,7 @@ void *PCA_Task(void *threadID){
 
 	}
 	
+	pca.resetDev();
 	printf("PCA_Task stopping...\n");
 	threadCount -= 1;
 	pthread_exit(NULL);

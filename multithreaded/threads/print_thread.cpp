@@ -101,9 +101,16 @@ void *PrintTask(void *threadID){
 				PrintVec3(PID_att.e_integ, "e_integ Att");
 			pthread_mutex_unlock(&PID_Mutex);
 	     }
+	    if(WaitForEvent(e_Key9, 0) == 0)
+	    {
+			pthread_mutex_lock(&ThrustPosControl_Mutex);
+				localMotor_Speed = ThrustPosControl;
+			pthread_mutex_unlock(&ThrustPosControl_Mutex);
+			printf("ThrustPosControl = %f\n",localMotor_Speed);
+	     }
 
 
-		
+
 
 	}
 	

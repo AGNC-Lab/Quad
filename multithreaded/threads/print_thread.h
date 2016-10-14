@@ -24,6 +24,7 @@ extern pthread_mutex_t attRef_Mutex;
 extern pthread_mutex_t PVA_Vicon_Mutex;
 extern pthread_mutex_t attRefJoy_Mutex;
 extern pthread_mutex_t PID_Mutex;
+extern pthread_mutex_t ThrustPosControl_Mutex;
 extern neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
 
 
@@ -36,6 +37,7 @@ extern Vec3 IMU_Data_AngVel;
 extern Vec4 Contr_Input;
 extern qcontrol_defs::PVA PVA_quadVicon;
 extern PID_3DOF PID_att;
+extern float ThrustPosControl;
 
 extern int threadCount;	
 extern int currentState;

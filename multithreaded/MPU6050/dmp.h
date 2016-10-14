@@ -215,8 +215,8 @@ int getDMP() {
         mpu_head.dmpGetGravity(&gravity, &q);
         mpu_head.dmpGetYawPitchRoll(ypr, &q, &gravity);
         mpu_head.dmpGetAccel(&aa, headFifoBuffer);
-        mpu_head.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-        mpu_head.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
+        //mpu_head.dmpGetLinearAccel(&aaReal, &aa, &gravity);
+        //mpu_head.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
         // printf("areal %f %f %f  \n", gravity.x, gravity.y, gravity.z);
         // printf("areal %d %d %d  \n", aa.x, aa.y, aa.z);
 
