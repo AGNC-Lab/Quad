@@ -29,7 +29,10 @@ root@192.168.1.202\'s password: **
 
 * Plug in the joystick to the PC
 * Start vicon system
-* Run ros stuff*
+* Run ros stuff: 
+```shell
+roslaunch vicon_bridge vicon.launch
+```
 * make sure vicon data is being broadcasted to the correct topic
 * run data.out
 
@@ -41,3 +44,5 @@ The following joystick buttons corresponds to:
 * B None
 * X Position Control
 * Y Attitude Mode
+
+The quadcopter can take either yaw data from IMU or Vicon. It can only go to position control mode with Vicon Yaw data. in order to switch Yaw source, type 'v'.
