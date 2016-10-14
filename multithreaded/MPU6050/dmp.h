@@ -143,6 +143,8 @@ int getDMP() {
 	    // get current FIFO count
 	    headFifoCount = mpu_head.getFIFOCount();
 
+        //printf("FIFOSize: %d\n", headFifoCount);
+
         if (headFifoCount >= 42) {
         // read a packet from FIFO
         mpu_head.getFIFOBytes(headFifoBuffer, headPacketSize);

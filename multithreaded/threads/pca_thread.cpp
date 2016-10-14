@@ -31,7 +31,7 @@ pca9685 pca(&i2c);
 void *PCA_Timer(void *threadID){
 
 	printf("PCA_Timer has started!\n");
-	int SamplingTime = 5;	//Sampling time in milliseconds
+	int SamplingTime = 8;	//Sampling time in milliseconds
 	int localCurrentState;
 
 	
@@ -104,6 +104,12 @@ void *PCA_Task(void *threadID){
 
 
 	}
+
+		//Send motor pulses
+		pca.pwmPulse(0, 0, 0*2048 + 2048);
+        pca.pwmPulse(1, 0, 0*2048 + 2048);
+        pca.pwmPulse(2, 0, 0*2048 + 2048);
+		pca.pwmPulse(3, 0, 0*2048 + 2048);
 	
 	pca.resetDev();
 	printf("PCA_Task stopping...\n");
