@@ -6,7 +6,7 @@ using Eigen::Matrix;
 float dt;
 float vicon_R;
 float accelerometer_R;
-float sigma_Q;
+float sigma_J;
 
 Matrix<float, 9, 1> x_est;
 Matrix<float, 9, 9> p_est;
@@ -30,17 +30,20 @@ Matrix<float, 9, 1> result;
 Matrix<float, 9, 3> G;
 Matrix<float, 9, 9> I_9x9;
 Matrix<float, 3, 3> I_3x3;
+Matrix<float, 3, 3> Zero_3x3;
 
 
 void kalman_init()
 {
 
-	dt = 0.010;       // 100 Hz
-  sigma_Q = 10;   // constant for Q
-	vicon_R = 0.0001; // estimated vicon standard deviation
-  accelerometer_R = 15.0; // estimated imu standard deviation
+	dt = 0.010;             // 100 Hz
+  sigma_J = 10;           // Jerk process noise
+  // sigma_bAcc = 10;        // Accelerometer bias process noise
+	vicon_R = 0.0001;       // estimated vicon standard deviation
+  accelerometer_R = 15.0; // estimated accelerometer standard deviation
   I_9x9 = Matrix<float, 9, 9>::Identity();
   I_3x3 = Matrix<float, 3, 3>::Identity();
+  Zero_3x3 = Matrix<float, 3, 3>::Zero(3, 3);
 
 	x_est = Matrix<float, 9, 1>::Zero();
   
@@ -48,42 +51,44 @@ void kalman_init()
        I_3x3 * (pow(dt, 2)/2),
        I_3x3 * dt;
 
-	Q = pow(sigma_Q, 2) * (G * G.transpose());     // process noise
+	Q = pow(sigma_J, 2) * (G * G.transpose());     // process noise
 	R_vicon = pow(vicon_R, 2) * I_3x3; // Measurement error
 
   R_acc = pow(accelerometer_R, 2) * I_3x3; // Measurement error
 
-  A << 1,  0,  0, dt,  0,  0, dt*dt/2.0,         0,         0,
-       0,  1,  0,  0, dt,  0,         0, dt*dt/2.0,         0,
-       0,  0,  1,  0,  0, dt,         0,         0, dt*dt/2.0,
-       0,  0,  0,  1,  0,  0,        dt,         0,         0,
-       0,  0,  0,  0,  1,  0,         0,        dt,         0,
-       0,  0,  0,  0,  0,  1,         0,         0,        dt,
-       0,  0,  0,  0,  0,  0,         1,         0,         0,
-       0,  0,  0,  0,  0,  0,         0,         1,         0,
-       0,  0,  0,  0,  0,  0,         0,         0,         1;
+  A << I_3x3,    dt*I_3x3, (pow(dt,2)/2)*I_3x3,
+       Zero_3x3,    I_3x3,            dt*I_3x3,
+       Zero_3x3, Zero_3x3,               I_3x3;
 
-  p_est <<   1,    0,    0,       0,       0,       0,      0,       0,       0,
-             0,    1,    0,       0,       0,       0,      0,       0,       0,
-             0,    0,    1,       0,       0,       0,      0,       0,       0,
-             0,    0,    0,  0.0001,       0,       0,      0,       0,       0,
-             0,    0,    0,       0,  0.0001,       0,      0,       0,       0,
-             0,    0,    0,       0,       0,  0.0001,      0,       0,       0,
-             0,    0,    0,       0,       0,       0, 0.0001,       0,       0,
-             0,    0,    0,       0,       0,       0,      0,  0.0001,       0,
-             0,    0,    0,       0,       0,       0,      0,       0,  0.0001;
+  p_est << 1.0*I_3x3,     Zero_3x3,     Zero_3x3,
+            Zero_3x3, 0.0001*I_3x3,     Zero_3x3,
+            Zero_3x3,     Zero_3x3, 0.0001*I_3x3;
 
-  H_pos << 1,  0,  0,  0,  0,  0,  0,  0,  0,
-           0,  1,  0,  0,  0,  0,  0,  0,  0,
-           0,  0,  1,  0,  0,  0,  0,  0,  0;
+  H_pos << I_3x3,    Zero_3x3, Zero_3x3;
+  H_v   << Zero_3x3, I_3x3,    Zero_3x3;
+  H_acc << Zero_3x3, Zero_3x3,    I_3x3;
 
-  H_acc << 0,  0,  0,  0,  0,  0,  1,  0,  0,
-           0,  0,  0,  0,  0,  0,  0,  1,  0,
-           0,  0,  0,  0,  0,  0,  0,  0,  1;
+  // p_est <<   1,    0,    0,       0,       0,       0,      0,       0,       0,
+  //            0,    1,    0,       0,       0,       0,      0,       0,       0,
+  //            0,    0,    1,       0,       0,       0,      0,       0,       0,
+  //            0,    0,    0,  0.0001,       0,       0,      0,       0,       0,
+  //            0,    0,    0,       0,  0.0001,       0,      0,       0,       0,
+  //            0,    0,    0,       0,       0,  0.0001,      0,       0,       0,
+  //            0,    0,    0,       0,       0,       0, 0.0001,       0,       0,
+  //            0,    0,    0,       0,       0,       0,      0,  0.0001,       0,
+  //            0,    0,    0,       0,       0,       0,      0,       0,  0.0001;
 
-  H_v << 0,  0,  0,  1,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  1,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  1,  0,  0,  0;
+  // H_pos << 1,  0,  0,  0,  0,  0,  0,  0,  0,
+  //          0,  1,  0,  0,  0,  0,  0,  0,  0,
+  //          0,  0,  1,  0,  0,  0,  0,  0,  0;
+
+  // H_acc << 0,  0,  0,  0,  0,  0,  1,  0,  0,
+  //          0,  0,  0,  0,  0,  0,  0,  1,  0,
+  //          0,  0,  0,  0,  0,  0,  0,  0,  1;
+
+  // H_v << 0,  0,  0,  1,  0,  0,  0,  0,  0,
+  //        0,  0,  0,  0,  1,  0,  0,  0,  0,
+  //        0,  0,  0,  0,  0,  1,  0,  0,  0;
 
 }
 
@@ -118,28 +123,21 @@ Matrix<float, 9, 1> kalman_estimate_pos(Matrix<float, 3, 1> z)
 
   S = H_pos * p_prd.transpose() * H_pos.transpose() + R_vicon;
   B = H_pos * p_prd.transpose();
-
   K = (S.inverse() * B).transpose();
 
   x_est = x_prd + K * (z - H_pos * x_prd);
-
-  //p_est = p_prd - klm_gain * H * p_prd; // unstable formula
-
   p_est = (I_9x9 - K * H_pos) * p_prd * (I_9x9 - K * H_pos).transpose() + K * R_vicon * K.transpose();   // Joseph form 
 
 // Computing measurements
-
   y = H_pos * x_est;   // Position estimate
-
   v = H_v * x_est; // Velocity estimate
-
   a = H_acc * x_est; // Acc estimate
 
   result << y,
             v,
             a;
 
-  //These are necessary if the acceleration is upt
+  //These are necessary if the acceleration is updated
   x_prd = x_est;
   p_prd = p_est;
 
@@ -154,21 +152,14 @@ Matrix<float, 9, 1> kalman_estimate_acc(Matrix<float, 3, 1> z)
 
   S = H_acc * p_prd.transpose() * H_acc.transpose() + R_acc;
   B = H_acc * p_prd.transpose();
-
   K = (S.inverse() * B).transpose();
 
   x_est = x_prd + K * (z - H_acc * x_prd);
-
-  //p_est = p_prd - klm_gain * H * p_prd; // unstable formula
-
   p_est = (I_9x9 - K * H_acc) * p_prd * (I_9x9 - K * H_acc).transpose() + K * R_acc * K.transpose();   // Joseph form 
 
 // Computing measurements
-
   y = H_pos * x_est;   // Position estimate
-
   v = H_v * x_est; // Velocity estimate
-
   a = H_acc * x_est;
 
   result << y,
