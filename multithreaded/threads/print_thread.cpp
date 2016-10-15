@@ -47,10 +47,15 @@ void *PrintTask(void *threadID){
 	    }
 	    if(WaitForEvent(e_Key3, 0) == 0)
 	    {	
+		pthread_mutex_lock(&PVA_Kalman_Mutex);
+			localIMU_Data_Accel.v[0] = PVA_quadKalman.acc.linear.x;
+			localIMU_Data_Accel.v[1] = PVA_quadKalman.acc.linear.y;
+			localIMU_Data_Accel.v[2] = PVA_quadKalman.acc.linear.z;
+		pthread_mutex_unlock(&PVA_Kalman_Mutex);
 		//WaitForEvent(e_Timeout,5);
-		pthread_mutex_lock(&IMU_Mutex);
-			localIMU_Data_Accel = IMU_Data_Accel;
-		pthread_mutex_unlock(&IMU_Mutex);
+		// pthread_mutex_lock(&IMU_Mutex);
+		// 	localIMU_Data_Accel = IMU_Data_Accel;
+		// pthread_mutex_unlock(&IMU_Mutex);
 		printf("IMU_Data_Accel = %-7f %-7f %-7f\n", localIMU_Data_Accel.v[0], localIMU_Data_Accel.v[1], localIMU_Data_Accel.v[2]);
 	    }
 	    if(WaitForEvent(e_Key4, 0) == 0)

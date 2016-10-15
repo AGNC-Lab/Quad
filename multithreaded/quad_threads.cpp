@@ -48,6 +48,7 @@ qcontrol_defs::PVA PVA_RefJoy;
 
 //Events and mutexes
 neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_Key6, e_Key7, e_Key8, e_Key9, e_KeyESC;
+// neosmart_event_t e_ButtonLB, e_ButtonRB;
 neosmart_event_t e_buttonX, e_buttonY, e_buttonA, e_buttonB;
 neosmart_event_t e_Motor_Up, e_Motor_Down, e_Motor_Kill;
 neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
@@ -137,17 +138,20 @@ void *rosPublisherTask(void *threadID){
   	geometry_msgs::Point RPY_Ref;
   	geometry_msgs::Wrench controlInputs;
   	qcontrol_defs::PVA PVA_EstimatedPVA;
+  	qcontrol_defs::PVA PVA_PVARef;
   	qcontrol_defs::PVA PVA_Vicon;
 
   	ros::Publisher imurpy_pub("Quad_RPY", &RPY_IMU);
-  	ros::Publisher Refrpy_pub("Quad_Ref", &RPY_Ref);
+  	ros::Publisher Refrpy_pub("Quad_RPYRef", &RPY_Ref);
   	ros::Publisher imuWrench_pub("Quad_Inputs", &controlInputs);
   	ros::Publisher PvaEst_pub("Quad_EstimatedPVA", &PVA_EstimatedPVA);
+  	ros::Publisher PvaRef_pub("Quad_PVARef", &PVA_PVARef);
   	ros::Publisher PvaVicon_pub("Quad_ViconPVA", &PVA_Vicon);
   	_nh.advertise(imurpy_pub);
   	_nh.advertise(Refrpy_pub);
   	_nh.advertise(imuWrench_pub);
 	_nh.advertise(PvaEst_pub);
+	_nh.advertise(PvaRef_pub);
 	_nh.advertise(PvaVicon_pub);
 
 	  while(1){
@@ -209,6 +213,9 @@ void *rosPublisherTask(void *threadID){
 			RPY_Ref.x = RPY.v[0];
 			RPY_Ref.y = RPY.v[1];
 			RPY_Ref.z = RPY.v[2];
+			pthread_mutex_lock(&posRefJoy_Mutex);	
+				PVA_PVARef.pos.position = PVA_RefJoy.pos.position;
+		  	pthread_mutex_unlock(&posRefJoy_Mutex);	
 		}
 		else{
 			RPY_Ref.x = 0;
@@ -232,6 +239,7 @@ void *rosPublisherTask(void *threadID){
 		    Refrpy_pub.publish( &RPY_Ref);
 		    imuWrench_pub.publish( &controlInputs);
 		    PvaEst_pub.publish( &PVA_EstimatedPVA);
+		    PvaRef_pub.publish ( &PVA_PVARef);
 		    PvaVicon_pub.publish(&PVA_Vicon);
 	    pthread_mutex_unlock(&ROS_Mutex);
 
@@ -266,6 +274,8 @@ void *Kalman_Task(void *threadID){
     qcontrol_defs::PVA localPVA_quadVicon;
     Vec3 IMU_localData_Accel;
     Vec3 prev_IMU_localData_Accel;
+    Vec4 IMU_localData_Quat;
+    Mat3x3 Rbw;
 
     kalman_init(); //Initialize kalman filter
 
@@ -311,6 +321,15 @@ void *Kalman_Task(void *threadID){
 
 		if (prev_IMU_localData_Accel != IMU_localData_Accel)
 		{
+			//Get vehicle orientation
+			pthread_mutex_lock(&PVA_Vicon_Mutex);
+				IMU_localData_Quat = IMU_Data_Quat_ViconYaw;
+			pthread_mutex_unlock(&PVA_Vicon_Mutex);
+			Rbw = Quat2rot(IMU_localData_Quat);
+
+			//Rotate acceleration into inertial frame
+			IMU_localData_Accel = MultiplyMat3x3Vec3(Rbw, IMU_localData_Accel);
+
 			//Measurement vector z
 			z <<  IMU_localData_Accel.v[0],
 			      IMU_localData_Accel.v[1],
@@ -416,6 +435,8 @@ int main(int argc, char *argv[])
 	e_buttonY = CreateEvent(true,false);
 	e_buttonA = CreateEvent(true,false);
 	e_buttonB = CreateEvent(true,false);
+	// e_ButtonLB = CreateEvent(true,false);
+	// e_ButtonRB = CreateEvent(true,false);
 
 	//Events for changing thrust values
 	e_Motor_Up = CreateEvent(false,false);      //auto-reset event
@@ -597,6 +618,8 @@ int main(int argc, char *argv[])
 	DestroyEvent(e_buttonY);
 	DestroyEvent(e_buttonA);
 	DestroyEvent(e_buttonB);
+	// DestroyEvent(e_ButtonLB);
+	// DestroyEvent(e_ButtonRB);
 	DestroyEvent(e_Motor_Up);
 	DestroyEvent(e_Motor_Down);
 	DestroyEvent(e_Motor_Kill);

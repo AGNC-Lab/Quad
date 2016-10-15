@@ -5,7 +5,7 @@ using Eigen::Matrix;
 
 float dt;
 float vicon_R;
-float imu_R;
+float accelerometer_R;
 float sigma_Q;
 
 Matrix<float, 9, 1> x_est;
@@ -13,7 +13,7 @@ Matrix<float, 9, 9> p_est;
 Matrix<float, 9, 9> p_pos;
 Matrix<float, 9, 9> Q;           
 Matrix<float, 3, 3> R_vicon;
-Matrix<float, 3, 3> R_imu;
+Matrix<float, 3, 3> R_acc;
 Matrix<float, 9, 9> A;
 Matrix<float, 3, 9> H_pos;
 Matrix<float, 3, 9> H_acc;
@@ -38,7 +38,7 @@ void kalman_init()
 	dt = 0.010;       // 100 Hz
   sigma_Q = 10;   // constant for Q
 	vicon_R = 0.0001; // estimated vicon standard deviation
-  imu_R = 0.0001; // estimated imu standard deviation
+  accelerometer_R = 15.0; // estimated imu standard deviation
   I_9x9 = Matrix<float, 9, 9>::Identity();
   I_3x3 = Matrix<float, 3, 3>::Identity();
 
@@ -51,7 +51,7 @@ void kalman_init()
 	Q = pow(sigma_Q, 2) * (G * G.transpose());     // process noise
 	R_vicon = pow(vicon_R, 2) * I_3x3; // Measurement error
 
-  R_imu = pow(imu_R, 2) * I_3x3; // Measurement error
+  R_acc = pow(accelerometer_R, 2) * I_3x3; // Measurement error
 
   A << 1,  0,  0, dt,  0,  0, dt*dt/2.0,         0,         0,
        0,  1,  0,  0, dt,  0,         0, dt*dt/2.0,         0,
@@ -104,6 +104,9 @@ Matrix<float, 9, 1> kalman_propagate()
             v,
             a;
 
+  x_est = x_prd;
+  p_est = p_prd;
+
   return result;
 
 }
@@ -136,6 +139,10 @@ Matrix<float, 9, 1> kalman_estimate_pos(Matrix<float, 3, 1> z)
             v,
             a;
 
+  //These are necessary if the acceleration is upt
+  x_prd = x_est;
+  p_prd = p_est;
+
   return result;
 }
 
@@ -145,7 +152,7 @@ Matrix<float, 9, 1> kalman_estimate_acc(Matrix<float, 3, 1> z)
 
 // Estimating state and covariance
 
-  S = H_acc * p_prd.transpose() * H_acc.transpose() + R_imu;
+  S = H_acc * p_prd.transpose() * H_acc.transpose() + R_acc;
   B = H_acc * p_prd.transpose();
 
   K = (S.inverse() * B).transpose();
@@ -154,7 +161,7 @@ Matrix<float, 9, 1> kalman_estimate_acc(Matrix<float, 3, 1> z)
 
   //p_est = p_prd - klm_gain * H * p_prd; // unstable formula
 
-  p_est = (I_9x9 - K * H_acc) * p_prd * (I_9x9 - K * H_acc).transpose() + K * R_imu * K.transpose();   // Joseph form 
+  p_est = (I_9x9 - K * H_acc) * p_prd * (I_9x9 - K * H_acc).transpose() + K * R_acc * K.transpose();   // Joseph form 
 
 // Computing measurements
 

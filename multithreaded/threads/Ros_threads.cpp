@@ -10,6 +10,8 @@ int ButtonX = 0;
 int ButtonY = 0;
 int ButtonA = 0;
 int ButtonB = 0;
+int ButtonLB = 0;
+int ButtonRB = 0;
 
 void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 	float yaw_ctr_pos, yaw_ctr_neg;
@@ -65,17 +67,6 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 		    }
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
-	else if(localCurrentState == POSITION_JOY_MODE){
-		pthread_mutex_lock(&ThrustJoy_Mutex);
-			ThrustJoy = msg.axes[1] * maxThrust_AttMode;
-		pthread_mutex_unlock(&ThrustJoy_Mutex);
-		pthread_mutex_lock(&posRefJoy_Mutex);	
-			PVA_RefJoy.pos.position.x += msg.axes[4]*maxVel_PosMode/20; //20hz
-			PVA_RefJoy.pos.position.y += msg.axes[3]*maxVel_PosMode/20;
-			PVA_RefJoy.vel.linear.x = msg.axes[4]*maxVel_PosMode;
-			PVA_RefJoy.vel.linear.y = msg.axes[3]*maxVel_PosMode;
-	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
-	}
 	else if(localCurrentState == MOTOR_MODE){ 	//If in motor mode
 		//Set thrust
 		pthread_mutex_lock(&ThrustJoy_Mutex);
@@ -101,6 +92,25 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 			attRefJoy.v[2] = IMU_localData_RPY.v[2]; //Set ref to actual IMU value
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
+
+	if(localCurrentState == POSITION_JOY_MODE){
+		pthread_mutex_lock(&ThrustJoy_Mutex);
+			ThrustJoy = msg.axes[1] * maxThrust_AttMode;
+		pthread_mutex_unlock(&ThrustJoy_Mutex);
+		pthread_mutex_lock(&posRefJoy_Mutex);	
+			PVA_RefJoy.pos.position.x += msg.axes[4]*maxVel_PosMode/20; //20hz
+			PVA_RefJoy.pos.position.y += msg.axes[3]*maxVel_PosMode/20;
+			PVA_RefJoy.pos.position.z += (msg.buttons[5]-msg.buttons[4])*maxVel_PosMode/20;
+			PVA_RefJoy.vel.linear.x = msg.axes[4]*maxVel_PosMode;
+			PVA_RefJoy.vel.linear.y = msg.axes[3]*maxVel_PosMode;
+			PVA_RefJoy.vel.linear.z = (msg.buttons[5]-msg.buttons[4])*maxVel_PosMode;
+	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
+	}
+	else{
+			PVA_RefJoy.pos.position.x = 0; //20hz
+			PVA_RefJoy.pos.position.y = 0;
+			PVA_RefJoy.pos.position.z = 1;
+	}
 	
 	//Compare joystick buttons with previously read (check if state changed)
 	if (msg.buttons[0] && !ButtonA){
@@ -119,10 +129,20 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 		SetEvent(e_buttonY);
 		//printf("ButtonY Pushed!\n");
 	}
+	// if (msg.buttons[4] && !ButtonLB){
+	// 	SetEvent(e_ButtonLB);
+	// 	//printf("ButtonY Pushed!\n");
+	// }
+	// if (msg.buttons[5] && !ButtonRB){
+	// 	SetEvent(e_ButtonRB);
+	// 	//printf("ButtonY Pushed!\n");
+	// }
 	ButtonA = msg.buttons[0];
 	ButtonB = msg.buttons[1];
 	ButtonX = msg.buttons[2];
 	ButtonY = msg.buttons[3];
+	// ButtonLB = msg.buttons[4];
+	// ButtonRB = msg.buttons[5];
 
 }
 

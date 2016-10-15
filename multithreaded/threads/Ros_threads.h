@@ -14,6 +14,7 @@ extern qcontrol_defs::PVA PVA_quadVicon, PVA_RefJoy;
 
 //Events and mutexes
 extern neosmart_event_t e_buttonX, e_buttonY, e_buttonA, e_buttonB;
+extern neosmart_event_t e_ButtonLB, e_ButtonRB;
 extern neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
 extern pthread_mutex_t IMU_Mutex;	//protect IMU data
 extern pthread_mutex_t ThrustJoy_Mutex;
