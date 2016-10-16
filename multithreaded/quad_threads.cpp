@@ -265,15 +265,17 @@ void *rosPublisherTask(void *threadID){
 void *Kalman_Task(void *threadID){
 	int SamplingTime = 10;	//Sampling time in milliseconds
 	int localCurrentState;
+	Vec3 Zeros;
+	Zeros.v[0] = 0; Zeros.v[1] = 0; Zeros.v[2] = 0;
 
 	ros::Time current_time = ros::Time(0,0);
 	ros::Time prev_time = ros::Time(0,0);
 
-	Eigen::Matrix<float, 9, 1> kalman_state = Eigen::Matrix<float, 9, 1>::Zero();
+	Eigen::Matrix<float, 12, 1> kalman_state = Eigen::Matrix<float, 12, 1>::Zero();
     Eigen::Matrix<float, 3, 1> z;   // measurement vector
     qcontrol_defs::PVA localPVA_quadVicon;
-    Vec3 IMU_localData_Accel;
-    Vec3 prev_IMU_localData_Accel;
+    Vec3 IMU_localData_Accel = Zeros;
+    Vec3 prev_IMU_localData_Accel = Zeros;
     Vec4 IMU_localData_Quat;
     Mat3x3 Rbw;
 

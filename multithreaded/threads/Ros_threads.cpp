@@ -6,6 +6,7 @@ Vec3 RPY_Vicon;
 Vec4 Quat_vicon;
 Vec4 IMU_localData_QuatViconYaw, IMU_localData_QuatNoYaw;
 Vec4 Vicon_YawQuat;
+qcontrol_defs::PVA localPVA_quadVicon;
 int ButtonX = 0;
 int ButtonY = 0;
 int ButtonA = 0;
@@ -25,11 +26,13 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 
 	pthread_mutex_lock(&PVA_Vicon_Mutex);
 		IMU_localData_RPY_ViconYaw = IMU_Data_RPY_ViconYaw;
+		localPVA_quadVicon = PVA_quadVicon;
 	pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
 	pthread_mutex_lock(&stateMachine_Mutex);
 		localCurrentState = currentState;
 	pthread_mutex_unlock(&stateMachine_Mutex);
+
 
 	//If in attitude mode
 	if(localCurrentState == ATTITUDE_MODE){
@@ -46,25 +49,6 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 		pthread_mutex_lock(&attRefJoy_Mutex);	
 			attRefJoy.v[0] = -msg.axes[3]*PI/6; //roll
 			attRefJoy.v[1] = msg.axes[4]*PI/6; //pitch
-			yaw_ctr_pos = msg.axes[2];
-			yaw_ctr_neg = msg.axes[5];
-			//Set yaw to measured yaw if quad isnt flying
-			if (msg.axes[1] <= 0) {
-				if(localYawSource == _IMU){
-					attRefJoy.v[2] = IMU_localData_RPY.v[2];
-				}
-				else if (localYawSource == _VICON){
-					attRefJoy.v[2] = IMU_localData_RPY_ViconYaw.v[2];
-				}
-		    }
-		    else{ //If quad is flying, increment yaw
-		    	if (yaw_ctr_neg < 0) {
-					attRefJoy.v[2] -= yaw_Inc;
-				}								//yaw
-				if (yaw_ctr_pos < 0) {
-					attRefJoy.v[2] += yaw_Inc;
-				}
-		    }
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
 	else if(localCurrentState == MOTOR_MODE){ 	//If in motor mode
@@ -107,9 +91,37 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
 	}
 	else{
-			PVA_RefJoy.pos.position.x = 0; //20hz
-			PVA_RefJoy.pos.position.y = 0;
-			PVA_RefJoy.pos.position.z = 1;
+			PVA_RefJoy.pos.position.x = PVA_quadVicon.pos.position.x; //20hz
+			PVA_RefJoy.pos.position.y = PVA_quadVicon.pos.position.y;
+			PVA_RefJoy.pos.position.z = PVA_quadVicon.pos.position.z;
+			PVA_RefJoy.vel.linear.x = 0;
+			PVA_RefJoy.vel.linear.y = 0;
+			PVA_RefJoy.vel.linear.z = 0;
+	}
+
+	//Manage yaw reference in attitude and position control modes
+	if((localCurrentState == ATTITUDE_MODE) || (localCurrentState == ATTITUDE_MODE)){
+		pthread_mutex_lock(&attRefJoy_Mutex);	
+			yaw_ctr_pos = msg.axes[2];
+			yaw_ctr_neg = msg.axes[5];
+			//Set yaw to measured yaw if quad isnt flying
+			if (msg.axes[1] <= 0) {
+				if(localYawSource == _IMU){
+					attRefJoy.v[2] = IMU_localData_RPY.v[2];
+				}
+				else if (localYawSource == _VICON){
+					attRefJoy.v[2] = IMU_localData_RPY_ViconYaw.v[2];
+				}
+		    }
+		    else{ //If quad is flying, increment yaw
+		    	if (yaw_ctr_neg < 0) {
+					attRefJoy.v[2] -= yaw_Inc;
+				}								//yaw
+				if (yaw_ctr_pos < 0) {
+					attRefJoy.v[2] += yaw_Inc;
+				}
+		    }
+		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
 	
 	//Compare joystick buttons with previously read (check if state changed)
