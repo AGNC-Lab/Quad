@@ -12,10 +12,9 @@ sudo apt-get install g++-arm-linux-gnueabi
 
 ```shell
 Install the following ROS packages:
-git clone https://github.com/ethz-asl/vicon_bridge (do this in catkin workspace and catkin_make)
-https://github.com/ros-drivers/rosserial (do this in catkin workspace and catkin_make)
-sudo apt-get install ros-indigo-joy
-sudo apt-get install ros-indigo-joystick-drivers
+git clone https://github.com/ethz-asl/vicon_bridge
+https://github.com/ros-drivers/rosserial 
+https://github.com/ros-drivers/joystick_drivers
 ```
 
 Then simply run:
