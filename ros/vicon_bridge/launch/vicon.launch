@@ -1,0 +1,18 @@
+<launch>
+        <node respawn="true" pkg="joy" type="joy_node" name="joy" >
+                <param name="dev" type="string" value="/dev/input/js0" />
+                <param name="deadzone" value="0.12" />
+		<param name="autorepeat_rate" value="20" />
+                </node>
+ 
+        <node pkg="rosserial_python" type="serial_node.py" name="rosserial" output="screen">
+                <param name="port" value="tcp" />
+                <param name="baud" value="460800" />
+                </node>
+
+	<node pkg="vicon_bridge" type="vicon_bridge" name="vicon" output="screen">
+		<param name="stream_mode" value="ClientPull" type="str" />
+		<param name="datastream_hostport" value="192.168.1.100:801" type="str" />
+		<param name="tf_ref_frame_id" value="/world" type="str" />
+		</node>
+</launch>
