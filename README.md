@@ -10,15 +10,10 @@ sudo apt-get install gcc-arm-linux-gnueabi
 sudo apt-get install g++-arm-linux-gnueabi
 ```
 
-Simply run:
+Then simply run:
 
 ```shell
 cmake .
-```
-
-Then:
-
-```shell
 make
 ```
 
