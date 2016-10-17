@@ -17,7 +17,19 @@ https://github.com/ros-drivers/rosserial
 https://github.com/ros-drivers/joystick_drivers
 ```
 
-Then simply run:
+Set your ROS environment variables
+```shell
+gedit ~/.bashrc
+```
+Add the following lines to the end of the .bashrc file:
+
+```shell
+export ROS_MASTER_URI=http://192.168.1.XX:11311
+export ROS_IP=192.168.1.XX
+```
+where 'XX' is your own IP.
+
+In order to compile the code from this repository, clone the Repo, go to the /multithreaded folder and run:
 
 ```shell
 cmake .
@@ -32,7 +44,7 @@ make
 ssh root@192.168.1.2xx
 root@192.168.1.202\'s password: **
 ```
-* Move the files data.out, configAtt.txt and configPos.txt to the same directory in the quad.
+* Move the files data.out, configAtt.txt, configPos.txt and AccCalib.txt to the same directory in the quad.
 
 ## Pre-flight routine
 
