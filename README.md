@@ -3,6 +3,13 @@ Quadrotor flight software source code for AGNC Lab
 
 ## Compiling
 
+Install the cross-compiler:
+
+```shell
+sudo apt-get install gcc-arm-linux-gnueabi
+sudo apt-get install g++-arm-linux-gnueabi
+```
+
 Simply run:
 
 ```shell
