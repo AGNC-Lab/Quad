@@ -35,7 +35,7 @@ extern pthread_mutex_t ThrustPosControl_Mutex;
 extern pthread_mutex_t PVA_Kalman_Mutex;
 
 
-extern Vec3 attRefJoy;
+extern Vec3 attRefJoy, angVelRefJoy;
 extern Vec4 Contr_Input;
 extern Vec4 PCA_Data;
 extern Vec3 IMU_Data_RPY;

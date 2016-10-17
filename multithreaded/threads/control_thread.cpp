@@ -89,6 +89,7 @@ void *AttControl_Task(void *threadID){
 		if(localCurrentState == ATTITUDE_MODE){
 			pthread_mutex_lock(&attRefJoy_Mutex);	
 			    localAttRef = attRefJoy;
+			    feedforward = angVelRefJoy;
 		    pthread_mutex_unlock(&attRefJoy_Mutex);
 			//Throttle
 		    pthread_mutex_lock(&ThrustJoy_Mutex);

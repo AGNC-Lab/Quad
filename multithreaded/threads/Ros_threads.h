@@ -29,7 +29,7 @@ extern pthread_mutex_t posRefJoy_Mutex;
 //Global variables
 extern float ThrustJoy;
 extern Vec3 IMU_Data_RPY, IMU_Data_RPY_ViconYaw;
-extern Vec3 attRefJoy;
+extern Vec3 attRefJoy, angVelRefJoy;
 extern Vec4 IMU_Data_QuatNoYaw, IMU_Data_Quat_ViconYaw;
 extern Vec4 Contr_Input;
 extern int threadCount;		//Counts active threads

@@ -29,6 +29,7 @@
 
 #include "kalman.h"
 
+//TODO add feed-forward from position to attitude. Check yawref when changing from att to pos mode
 
 using namespace neosmart;
 using namespace std;
@@ -77,7 +78,7 @@ float ThrustPosControl = 0;
 Vec3 IMU_Data_RPY, IMU_Data_RPY_ViconYaw;
 Vec3 IMU_Data_Accel, IMU_Data_AngVel;
 Vec4 IMU_Data_Quat, IMU_Data_QuatNoYaw, IMU_Data_Quat_ViconYaw;
-Vec3 attRefJoy;
+Vec3 attRefJoy, angVelRefJoy;
 Mat3x3 Rdes_PosControl;
 Vec4 Contr_Input;
 Vec4 PCA_Data;
