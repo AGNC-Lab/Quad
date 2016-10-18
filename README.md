@@ -18,7 +18,7 @@ git clone https://github.com/ethz-asl/vicon_bridge
 git clone https://github.com/ros-drivers/rosserial 
 git clone https://github.com/ros-drivers/joystick_drivers
 ```
-- Copy the qcontrol_defs folder from this repo into /catkin_we/src
+- Copy the qcontrol_defs folder from this repo into /catkin_ws/src
 - Go to /catkin_ws and run the following line:
 ```shell
 catkin_make
