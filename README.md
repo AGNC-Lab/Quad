@@ -80,6 +80,7 @@ roslaunch vicon_bridge vicon.launch
 ```shell
 rostopic echo /vicon/Quad1/Quad1
 ```
+Observation: You don't need to see vicon data if you don't need to fly in position control mode. Still, you have to run the previous vicon.launch file.
 * run the flight software:
 
 ```shell
