@@ -53,7 +53,19 @@ If there is an error with any of the above, erase the CMakeCache.txt file and tr
 ssh root@192.168.1.2xx
 root@192.168.1.202\'s password: **
 ```
+* xx is the number of the quad. All quads are numbered, you should see it labeled somewhere in the quad you want to connect to.
 * Move the files data.out, configAtt.txt, configPos.txt and AccCalib.txt to the same directory in the quad.
+
+## Moving files into the quadcopter using Nautilus
+
+You can always send data into the quadcopter using the terminal, but it might be a little bit tedious. Alternatively, we can use sshfs, which allows you to transfer files to the quad using the file explorer (Nautilus). This can be accomphished by creating a folder on your computer that will host the quadcopter files. We usually name these folders as "gumxx", where xx is the number of the quad. Then, you can see the files inside the quad by typing the following in a terminal:
+```shell
+sshfs root@192.168.1.2xx:/ DIRECTORY_TO_gumxx
+```
+where you should substitute "DIRECTORY_TO_gumxx" to the path where you created the folder. For instance, if you create a folder gum02 in the home folder, you should just type:
+```shell
+sshfs root@192.168.1.2xx:/ ~/gum02
+```
 
 ## Pre-flight routine
 
