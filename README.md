@@ -86,7 +86,7 @@ Observation: You don't need to see vicon data if you don't need to fly in positi
 ```shell
 data.out 192.168.1.XX
 ```
-where 'XX' is the IP of the machine running ROS. If the quadcopter cannot connect to the ROS machine (it will say that is trying to connect), disable firewall:
+where 'XX' is the IP of the machine running ROS. If the quadcopter cannot connect to the ROS machine (it will say that is trying to connect), disable firewall in your machine:
 ```shell
 sudo ufw disable
 ```
