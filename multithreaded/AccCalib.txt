@@ -1,0 +1,7 @@
+Accelerometer bias: 
+bias_x = 112.508
+bias_y = 64.6611
+bias_z = 371.488
+Accelerometer Radius: 
+Radius = 8184.8
+

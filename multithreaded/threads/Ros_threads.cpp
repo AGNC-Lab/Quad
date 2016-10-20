@@ -35,8 +35,40 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 		localCurrentState = currentState;
 	pthread_mutex_unlock(&stateMachine_Mutex);
 
+	pthread_mutex_lock(&YawSource_Mutex);
+		localYawSource = YawSource;
+	pthread_mutex_unlock(&YawSource_Mutex);
+
+	yaw_ctr_pos = msg.axes[2]; //Command to increase yaw
+	yaw_ctr_neg = msg.axes[5]; //Command to decrease yaw
+
 
 	//If in attitude mode
+	if(localCurrentState == MOTOR_MODE){ 	//If in motor mode
+		//Set thrust
+		pthread_mutex_lock(&ThrustJoy_Mutex);
+			ThrustJoy = msg.axes[1] * maxThrust_MotorMode;
+		pthread_mutex_unlock(&ThrustJoy_Mutex);
+
+		//Set attitude with zero error
+		pthread_mutex_lock(&attRefJoy_Mutex);	
+			attRefJoy.v[0] = IMU_localData_RPY.v[0]; //Set ref to actual IMU value
+			attRefJoy.v[1] = IMU_localData_RPY.v[1]; //Set ref to actual IMU value
+			
+			//Set yaw reference to measured yaw
+			if(localYawSource == _IMU){
+				attRefJoy.v[2] = IMU_localData_RPY.v[2];
+			}
+			else if (localYawSource == _VICON){
+				attRefJoy.v[2] = IMU_localData_RPY_ViconYaw.v[2];
+			}
+
+			angVelRefJoy.v[0] = 0;
+			angVelRefJoy.v[1] = 0;
+			angVelRefJoy.v[2] = 0;
+		pthread_mutex_unlock(&attRefJoy_Mutex);
+	}
+	
 	if(localCurrentState == ATTITUDE_MODE){
 		//Set thrust
 		pthread_mutex_lock(&ThrustJoy_Mutex);
@@ -50,22 +82,7 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 			angVelRefJoy.v[2] = 0;
 			attRefJoy.v[0] = -msg.axes[3]*PI/6; //roll
 			attRefJoy.v[1] = msg.axes[4]*PI/6; //pitch
-		pthread_mutex_unlock(&attRefJoy_Mutex);
-	}
-	else if(localCurrentState == MOTOR_MODE){ 	//If in motor mode
-		//Set thrust
-		pthread_mutex_lock(&ThrustJoy_Mutex);
-			ThrustJoy = msg.axes[1] * maxThrust_MotorMode;
-		pthread_mutex_unlock(&ThrustJoy_Mutex);
 
-		//Set attitude with zero error
-		pthread_mutex_lock(&YawSource_Mutex);
-			localYawSource = YawSource;
-		pthread_mutex_unlock(&YawSource_Mutex);
-		pthread_mutex_lock(&attRefJoy_Mutex);	
-			attRefJoy.v[0] = IMU_localData_RPY.v[0]; //Set ref to actual IMU value
-			attRefJoy.v[1] = IMU_localData_RPY.v[1]; //Set ref to actual IMU value
-			
 			//Set yaw to measured yaw if quad isnt flying
 			if (msg.axes[1] <= 0) {
 				if(localYawSource == _IMU){
@@ -75,19 +92,23 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 					attRefJoy.v[2] = IMU_localData_RPY_ViconYaw.v[2];
 				}
 		    }
-			angVelRefJoy.v[0] = 0;
-			angVelRefJoy.v[1] = 0;
-			angVelRefJoy.v[2] = 0;
+		    else{ //If quad is flying, increment yaw
+		    	if (yaw_ctr_neg < 0) {
+					attRefJoy.v[2] -= yaw_Inc;
+				}								//yaw
+				if (yaw_ctr_pos < 0) {
+					attRefJoy.v[2] += yaw_Inc;
+				}
+		    }
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
-	else{ //If not in a flight mode, set everything to zero
+
+	if((localCurrentState == INITIALIZING) || 
+	   (localCurrentState == INITIALIZED) ||
+	   (localCurrentState == TERMINATE)) { //All not flying modes: set everything to zero
 		pthread_mutex_lock(&ThrustJoy_Mutex);
 			ThrustJoy = 0;
 		pthread_mutex_unlock(&ThrustJoy_Mutex);
-
-		pthread_mutex_lock(&YawSource_Mutex);
-			localYawSource = YawSource;
-		pthread_mutex_unlock(&YawSource_Mutex);
 
 		//Set attitude with zero error
 		pthread_mutex_lock(&attRefJoy_Mutex);	
@@ -114,49 +135,31 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 			ThrustJoy = msg.axes[1] * maxThrust_AttMode;
 		pthread_mutex_unlock(&ThrustJoy_Mutex);
 		pthread_mutex_lock(&posRefJoy_Mutex);	
+			//Integrate current position
 			PVA_RefJoy.pos.position.x += msg.axes[4]*maxVel_PosMode*SamplingTime; //20hz
 			PVA_RefJoy.pos.position.y += msg.axes[3]*maxVel_PosMode*SamplingTime;
 			PVA_RefJoy.pos.position.z += (msg.buttons[5]-msg.buttons[4])*maxVel_PosMode*SamplingTime;
 			PVA_RefJoy.vel.linear.x = msg.axes[4]*maxVel_PosMode;
 			PVA_RefJoy.vel.linear.y = msg.axes[3]*maxVel_PosMode;
 			PVA_RefJoy.vel.linear.z = (msg.buttons[5]-msg.buttons[4])*maxVel_PosMode;
+			//TODO: add yaw reference here in quaternion
 	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
 	}
-	else{
+	else{ //If not in position mode, set position references to read values
+		pthread_mutex_lock(&posRefJoy_Mutex);
 			PVA_RefJoy.pos.position.x = PVA_quadVicon.pos.position.x;
 			PVA_RefJoy.pos.position.y = PVA_quadVicon.pos.position.y;
 			PVA_RefJoy.pos.position.z = PVA_quadVicon.pos.position.z;
 			PVA_RefJoy.vel.linear.x = 0;
 			PVA_RefJoy.vel.linear.y = 0;
 			PVA_RefJoy.vel.linear.z = 0;
+		pthread_mutex_unlock(&posRefJoy_Mutex);	
 	}
 
 	//Manage yaw reference in attitude and position control modes
 	if((localCurrentState == ATTITUDE_MODE) || (localCurrentState == POSITION_JOY_MODE)){
 		pthread_mutex_lock(&attRefJoy_Mutex);	
-			yaw_ctr_pos = msg.axes[2];
-			yaw_ctr_neg = msg.axes[5];
 
-			pthread_mutex_lock(&YawSource_Mutex);
-				localYawSource = YawSource;
-			pthread_mutex_unlock(&YawSource_Mutex);
-			//Set yaw to measured yaw if quad isnt flying
-			if (msg.axes[1] <= 0) {
-				if(localYawSource == _IMU){
-					attRefJoy.v[2] = IMU_localData_RPY.v[2];
-				}
-				else if (localYawSource == _VICON){
-					attRefJoy.v[2] = IMU_localData_RPY_ViconYaw.v[2];
-				}
-		    }
-		    else{ //If quad is flying, increment yaw
-		    	if (yaw_ctr_neg < 0) {
-					attRefJoy.v[2] -= yaw_Inc;
-				}								//yaw
-				if (yaw_ctr_pos < 0) {
-					attRefJoy.v[2] += yaw_Inc;
-				}
-		    }
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
 
@@ -169,7 +172,7 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 	}
 	if (msg.buttons[1] && !ButtonB){
 		SetEvent(e_buttonB);
-		printf("ButtonB Pushed!\n");
+		//printf("ButtonB Pushed!\n");
 	}
 	if (msg.buttons[2] && !ButtonX){
 		SetEvent(e_buttonX);
