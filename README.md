@@ -3,6 +3,8 @@ Quadrotor flight software source code for AGNC Lab
 
 ## Compiling
 
+Install Eigen3 and set the path to FindEigen3.cmake to CMAKE_MODULE_PATH by appending the following line SET(CMAKE_MODULE_PATH /path/to FindEigen3.cmake) before find_package(Eigen3 REQUIRED) in CmakeLists.txt.
+
 Install the cross-compiler:
 
 ```shell
