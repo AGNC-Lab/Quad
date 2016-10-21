@@ -46,6 +46,7 @@ char *rosSrvrIp;
 qcontrol_defs::PVA PVA_quadVicon;
 qcontrol_defs::PVA PVA_quadKalman;
 qcontrol_defs::PVA PVA_RefJoy;
+qcontrol_defs::PVA PVA_RefClient;
 
 //Events and mutexes
 neosmart_event_t e_Key1, e_Key2, e_Key3, e_Key4, e_Key5, e_Key6, e_Key7, e_Key8, e_Key9, e_KeyESC;
@@ -63,6 +64,7 @@ pthread_mutex_t PCA_Mutex;
 pthread_mutex_t ThrustJoy_Mutex;
 pthread_mutex_t ThrustPosControl_Mutex;
 pthread_mutex_t attRefJoy_Mutex, posRefJoy_Mutex;
+pthread_mutex_t posRefClient_Mutex;
 pthread_mutex_t attRefPosControl_Mutex;
 pthread_mutex_t Contr_Input_Mutex;
 pthread_mutex_t PID_Mutex;
@@ -99,6 +101,9 @@ void *rosSpinTask(void *threadID){
 	//ros joy subscriber
 	ros::Subscriber<sensor_msgs::Joy> sub_mp_joy("/joy", handle_mp_joy_msg);
 	_nh.subscribe(sub_mp_joy);	
+
+	ros::Subscriber<qcontrol_defs::PVA> sub_ros_pva("/pva", handle_client_pva_msg);
+	_nh.subscribe(sub_ros_pva);	
 
   	ros::Subscriber<geometry_msgs::TransformStamped> sub_tform("/vicon/Quad7/Quad7", handle_Vicon);
   	_nh.subscribe(sub_tform);
@@ -214,15 +219,16 @@ void *rosPublisherTask(void *threadID){
 			RPY_Ref.x = RPY.v[0];
 			RPY_Ref.y = RPY.v[1];
 			RPY_Ref.z = RPY.v[2];
-			pthread_mutex_lock(&posRefJoy_Mutex);	
-				PVA_PVARef.pos.position = PVA_RefJoy.pos.position;
-		  	pthread_mutex_unlock(&posRefJoy_Mutex);	
 		}
 		else{
 			RPY_Ref.x = 0;
 			RPY_Ref.y = 0;
 			RPY_Ref.z = 0;
 		}
+
+		pthread_mutex_lock(&posRefJoy_Mutex);	
+			PVA_PVARef.pos.position = PVA_RefJoy.pos.position;
+	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
 
 	  	//Get inputs for quadcopter
 		pthread_mutex_lock(&Contr_Input_Mutex);

@@ -31,6 +31,7 @@ extern pthread_mutex_t PCA_Mutex;
 extern pthread_mutex_t PID_Mutex;
 extern pthread_mutex_t PVA_Vicon_Mutex;
 extern pthread_mutex_t posRefJoy_Mutex;
+extern pthread_mutex_t posRefClient_Mutex;
 extern pthread_mutex_t ThrustPosControl_Mutex;
 extern pthread_mutex_t PVA_Kalman_Mutex;
 
@@ -42,7 +43,7 @@ extern Vec3 IMU_Data_RPY;
 extern Vec4 IMU_Data_Quat, IMU_Data_Quat_ViconYaw;
 extern Vec3 IMU_Data_AngVel;
 extern PID_3DOF PID_angVel, PID_att, PID_pos; 	//APIDs structures
-extern qcontrol_defs::PVA PVA_quadKalman, PVA_RefJoy, PVA_quadVicon;
+extern qcontrol_defs::PVA PVA_quadKalman, PVA_RefJoy, PVA_quadVicon, PVA_RefClient;
 extern float ThrustPosControl;
 extern Mat3x3 Rdes_PosControl;
 

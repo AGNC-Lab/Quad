@@ -6,7 +6,6 @@ Vec3 RPY_Vicon;
 Vec4 Quat_vicon;
 Vec4 IMU_localData_QuatViconYaw, IMU_localData_QuatNoYaw;
 Vec4 Vicon_YawQuat;
-qcontrol_defs::PVA localPVA_quadVicon;
 int ButtonX = 0;
 int ButtonY = 0;
 int ButtonA = 0;
@@ -15,11 +14,50 @@ int ButtonLB = 0;
 int ButtonRB = 0;
 double SamplingTime = 1.0/20.0; //20Hz
 
+void handle_client_pva_msg(const qcontrol_defs::PVA& msg){
+
+	int localCurrentState;
+	qcontrol_defs::PVA localPVA_quadVicon;
+
+	pthread_mutex_lock(&PVA_Vicon_Mutex);
+		localPVA_quadVicon = PVA_quadVicon;
+	pthread_mutex_unlock(&PVA_Vicon_Mutex);
+
+	pthread_mutex_lock(&stateMachine_Mutex);
+		localCurrentState = currentState;
+	pthread_mutex_unlock(&stateMachine_Mutex);
+
+	if(localCurrentState == POSITION_ROS_MODE){
+		// pthread_mutex_lock(&ThrustJoy_Mutex);
+		// 	ThrustJoy = msg.axes[1] * maxThrust_AttMode;
+		// pthread_mutex_unlock(&ThrustJoy_Mutex);
+		pthread_mutex_lock(&posRefClient_Mutex);	
+			PVA_RefClient.pos.position.x = msg.pos.position.x; //20hz
+			PVA_RefClient.pos.position.y = msg.pos.position.y;
+			PVA_RefClient.pos.position.z = msg.pos.position.z;
+			PVA_RefClient.vel.linear.x = msg.vel.linear.x;
+			PVA_RefClient.vel.linear.y = msg.vel.linear.y;
+			PVA_RefClient.vel.linear.z = msg.vel.linear.z;
+	  	pthread_mutex_unlock(&posRefClient_Mutex);	
+	}
+	// else{
+	// 	pthread_mutex_lock(&posRefClient_Mutex);	
+	// 		PVA_RefClient.pos.position.x = localPVA_quadVicon.pos.position.x;
+	// 		PVA_RefClient.pos.position.y = localPVA_quadVicon.pos.position.y;
+	// 		PVA_RefClient.pos.position.z = localPVA_quadVicon.pos.position.z;
+	// 		PVA_RefClient.vel.linear.x = 0;
+	// 		PVA_RefClient.vel.linear.y = 0;
+	// 		PVA_RefClient.vel.linear.z = 0;
+	// 	pthread_mutex_unlock(&posRefClient_Mutex);	
+	// }
+}
+
 
 void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 	float yaw_ctr_pos, yaw_ctr_neg;
 	int localCurrentState, localYawSource;
 	Vec3 IMU_localData_RPY, IMU_localData_RPY_ViconYaw;
+	qcontrol_defs::PVA localPVA_quadVicon;
 
 	//Grab attitude estimation
 	pthread_mutex_lock(&IMU_Mutex);
@@ -102,6 +140,43 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 		    }
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
+	if(localCurrentState == POSITION_JOY_MODE){
+		pthread_mutex_lock(&ThrustJoy_Mutex);
+			ThrustJoy = msg.axes[1] * maxThrust_AttMode;
+		pthread_mutex_unlock(&ThrustJoy_Mutex);
+		pthread_mutex_lock(&posRefJoy_Mutex);	
+			//Integrate current position
+			PVA_RefJoy.pos.position.x += msg.axes[4]*maxVel_PosMode*SamplingTime; //20hz
+			PVA_RefJoy.pos.position.y += msg.axes[3]*maxVel_PosMode*SamplingTime;
+			PVA_RefJoy.pos.position.z += (msg.buttons[5]-msg.buttons[4])*maxVel_PosMode*SamplingTime;
+			PVA_RefJoy.vel.linear.x = msg.axes[4]*maxVel_PosMode;
+			PVA_RefJoy.vel.linear.y = msg.axes[3]*maxVel_PosMode;
+			PVA_RefJoy.vel.linear.z = (msg.buttons[5]-msg.buttons[4])*maxVel_PosMode;
+			//TODO: add yaw reference here in quaternion
+	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
+	}
+	else{ //If not in position mode, set position references to read values
+		pthread_mutex_lock(&posRefJoy_Mutex);
+			PVA_RefJoy.pos.position.x = localPVA_quadVicon.pos.position.x;
+			PVA_RefJoy.pos.position.y = localPVA_quadVicon.pos.position.y;
+			PVA_RefJoy.pos.position.z = localPVA_quadVicon.pos.position.z;
+			PVA_RefJoy.vel.linear.x = 0;
+			PVA_RefJoy.vel.linear.y = 0;
+			PVA_RefJoy.vel.linear.z = 0;
+		pthread_mutex_unlock(&posRefJoy_Mutex);	
+	}
+
+	if(localCurrentState != POSITION_ROS_MODE){
+		pthread_mutex_lock(&posRefJoy_Mutex);	
+			//Reference = current position
+			PVA_RefClient.pos.position.x = localPVA_quadVicon.pos.position.x;
+			PVA_RefClient.pos.position.y = localPVA_quadVicon.pos.position.y;
+			PVA_RefClient.pos.position.z = localPVA_quadVicon.pos.position.z;
+			PVA_RefClient.vel.linear.x = 0;
+			PVA_RefClient.vel.linear.y = 0;
+			PVA_RefClient.vel.linear.z = 0;
+	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
+	}
 
 	if((localCurrentState == INITIALIZING) || 
 	   (localCurrentState == INITIALIZED) ||
@@ -127,39 +202,6 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 			angVelRefJoy.v[0] = 0;
 			angVelRefJoy.v[1] = 0;
 			angVelRefJoy.v[2] = 0;
-		pthread_mutex_unlock(&attRefJoy_Mutex);
-	}
-
-	if(localCurrentState == POSITION_JOY_MODE){
-		pthread_mutex_lock(&ThrustJoy_Mutex);
-			ThrustJoy = msg.axes[1] * maxThrust_AttMode;
-		pthread_mutex_unlock(&ThrustJoy_Mutex);
-		pthread_mutex_lock(&posRefJoy_Mutex);	
-			//Integrate current position
-			PVA_RefJoy.pos.position.x += msg.axes[4]*maxVel_PosMode*SamplingTime; //20hz
-			PVA_RefJoy.pos.position.y += msg.axes[3]*maxVel_PosMode*SamplingTime;
-			PVA_RefJoy.pos.position.z += (msg.buttons[5]-msg.buttons[4])*maxVel_PosMode*SamplingTime;
-			PVA_RefJoy.vel.linear.x = msg.axes[4]*maxVel_PosMode;
-			PVA_RefJoy.vel.linear.y = msg.axes[3]*maxVel_PosMode;
-			PVA_RefJoy.vel.linear.z = (msg.buttons[5]-msg.buttons[4])*maxVel_PosMode;
-			//TODO: add yaw reference here in quaternion
-	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
-	}
-	else{ //If not in position mode, set position references to read values
-		pthread_mutex_lock(&posRefJoy_Mutex);
-			PVA_RefJoy.pos.position.x = PVA_quadVicon.pos.position.x;
-			PVA_RefJoy.pos.position.y = PVA_quadVicon.pos.position.y;
-			PVA_RefJoy.pos.position.z = PVA_quadVicon.pos.position.z;
-			PVA_RefJoy.vel.linear.x = 0;
-			PVA_RefJoy.vel.linear.y = 0;
-			PVA_RefJoy.vel.linear.z = 0;
-		pthread_mutex_unlock(&posRefJoy_Mutex);	
-	}
-
-	//Manage yaw reference in attitude and position control modes
-	if((localCurrentState == ATTITUDE_MODE) || (localCurrentState == POSITION_JOY_MODE)){
-		pthread_mutex_lock(&attRefJoy_Mutex);	
-
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
 

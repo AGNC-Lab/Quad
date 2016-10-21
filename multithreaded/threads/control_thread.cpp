@@ -105,6 +105,14 @@ void *AttControl_Task(void *threadID){
 				localThrust = ThrustPosControl;
 			pthread_mutex_unlock(&ThrustPosControl_Mutex);
 		}
+		else if (localCurrentState == POSITION_ROS_MODE){
+			pthread_mutex_lock(&attRefPosControl_Mutex);
+				Rdes = Rdes_PosControl;
+			pthread_mutex_unlock(&attRefPosControl_Mutex);
+		    pthread_mutex_lock(&ThrustPosControl_Mutex);
+				localThrust = ThrustPosControl;
+			pthread_mutex_unlock(&ThrustPosControl_Mutex);
+		}
 		else if (localCurrentState == MOTOR_MODE){
 		    pthread_mutex_lock(&ThrustJoy_Mutex);
 				localThrust = ThrustJoy;
@@ -245,7 +253,7 @@ void *PosControl_Task(void *threadID){
 
 	//Initialize PIDs (sets initial errors to zero)
 	pthread_mutex_lock(&PID_Mutex);
-	initializePID(&PID_pos);
+		initializePID(&PID_pos);
 	pthread_mutex_unlock(&PID_Mutex);
 
 	while(1){
@@ -282,9 +290,16 @@ void *PosControl_Task(void *threadID){
 	 //  	pthread_mutex_unlock(&PVA_Vicon_Mutex);	
 
 	  	//Grab joystick position and velocity reference
-		pthread_mutex_lock(&posRefJoy_Mutex);	
-			localPVA_Ref = PVA_RefJoy;
-	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
+		if(localCurrentState == POSITION_JOY_MODE){
+			pthread_mutex_lock(&posRefJoy_Mutex);	
+				localPVA_Ref = PVA_RefJoy;
+		  	pthread_mutex_unlock(&posRefJoy_Mutex);	
+		  }
+		else if(localCurrentState == POSITION_ROS_MODE){
+			pthread_mutex_lock(&posRefJoy_Mutex);	
+				localPVA_Ref = PVA_RefClient;
+		  	pthread_mutex_unlock(&posRefJoy_Mutex);	
+		  }
 
 		//Grab yaw reference
 		pthread_mutex_lock(&attRefJoy_Mutex);	
@@ -315,7 +330,7 @@ void *PosControl_Task(void *threadID){
 			updateErrorPID(&PID_pos, feedForward, e_Pos, e_Vel, dt);
 
 			//Dont integrate integrator if not in POS_Control mode
-			if (localCurrentState != POSITION_JOY_MODE){
+			if (localCurrentState != POSITION_JOY_MODE && localCurrentState != POSITION_ROS_MODE){
 				resetIntegralErrorPID(&PID_pos);
 			}
 

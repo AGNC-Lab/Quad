@@ -45,17 +45,30 @@ void *StateMachineTask(void *threadID){
 				pthread_mutex_unlock(&stateMachine_Mutex);
 				printf("Motor Mode!\n");
 			}
+			if(WaitForEvent(e_buttonB,0) == 0){
+				ResetEvent(e_buttonB);
+				if(localYawSource == _VICON){
+					pthread_mutex_lock(&stateMachine_Mutex);
+						currentState = POSITION_ROS_MODE;
+					pthread_mutex_unlock(&stateMachine_Mutex);
+					printf("Position ROS Mode!\n");
+				}
+				else{
+					printf("Can't Switch into Position ROS Mode! Get data from Vicon by pushing 'v' in the Keyboard\n");
+				}
+				
+			}
 			if(WaitForEvent(e_buttonX,0) == 0){
 				ResetEvent(e_buttonX);
-					if(localYawSource == _VICON){
-						pthread_mutex_lock(&stateMachine_Mutex);
-							currentState = POSITION_JOY_MODE;
-						pthread_mutex_unlock(&stateMachine_Mutex);
-						printf("Position Joy Mode!\n");
-					}
-					else{
-						printf("Can't Switch into Position Joy Mode! Get data from Vicon by pushing 'v' in the Keyboard\n");
-					}
+				if(localYawSource == _VICON){
+					pthread_mutex_lock(&stateMachine_Mutex);
+						currentState = POSITION_JOY_MODE;
+					pthread_mutex_unlock(&stateMachine_Mutex);
+					printf("Position Joy Mode!\n");
+				}
+				else{
+					printf("Can't Switch into Position Joy Mode! Get data from Vicon by pushing 'v' in the Keyboard\n");
+				}
 				
 			}
 			if(WaitForEvent(e_buttonY,0) == 0){

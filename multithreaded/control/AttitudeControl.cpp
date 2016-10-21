@@ -17,7 +17,7 @@
 #define K_WZ    1			//Control gain for angular velocity about z
 #define KT	1.09862e-6		//Thrust coefficient for the quadrotor's propellers
 #define KM	9.58815e-9		//Moment coefficient for the quadrotor's propellers
-#define RAD     0.12			//Radius of quadcopter (distance between center and farther tip of propeller)
+#define RAD     0.12		//Radius of quadcopter (distance between center and farther tip of propeller)
 
 
 //Functions
