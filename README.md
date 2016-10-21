@@ -1,4 +1,4 @@
-# Quad
+# Quadrotor Flight Software
 Quadrotor flight software source code for AGNC Lab
 
 ## Compiling
@@ -28,7 +28,7 @@ catkin_make
 ```
 All the packages above should install.
 
-# Set your ROS environment variables
+## Set your ROS environment variables
 ```shell
 gedit ~/.bashrc
 ```
