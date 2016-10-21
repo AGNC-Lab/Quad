@@ -117,65 +117,74 @@ void *AttControl_Task(void *threadID){
 		    pthread_mutex_lock(&ThrustJoy_Mutex);
 				localThrust = ThrustJoy;
 			pthread_mutex_unlock(&ThrustJoy_Mutex);
+			inputTorque.v[0] = 0;
+			inputTorque.v[1] = 0;
+			inputTorque.v[2] = 0;
 		}
 		else{
 			localThrust = 0;
 		}
 
-
-		pthread_mutex_lock(&YawSource_Mutex);
-			localYawSource = YawSource;
-		pthread_mutex_unlock(&YawSource_Mutex);
-
-		//Grab attitude estimation
-		if (localYawSource == _IMU){
-			pthread_mutex_lock(&IMU_Mutex);
-				IMU_localData_Quat = IMU_Data_Quat;
-				IMU_localData_Vel = IMU_Data_AngVel;
-				IMU_localData_RPY = IMU_Data_RPY;
-			pthread_mutex_unlock(&IMU_Mutex);
-		}
-		else{
-			pthread_mutex_lock(&PVA_Vicon_Mutex);
-				IMU_localData_Quat = IMU_Data_Quat_ViconYaw;
-			pthread_mutex_unlock(&PVA_Vicon_Mutex);
-			pthread_mutex_lock(&IMU_Mutex);
-				IMU_localData_Vel = IMU_Data_AngVel;
-				IMU_localData_RPY = IMU_Data_RPY;
-			pthread_mutex_unlock(&IMU_Mutex);
-		}
-
-		Rbw = Quat2rot(IMU_localData_Quat);
-
-	    //Calculate attitude error
-	    error_att = AttitudeErrorVector(Rbw, Rdes);
-	    //PrintVec3(error_att, "error_att"); 
-
-		//Update PID
-		pthread_mutex_lock(&PID_Mutex);
-			if(!isNanVec3(error_att)){
-				updateErrorPID(&PID_att, feedforward, error_att, zeros, dt);
-			}
-
-			//Dont integrate integrator if not in minimum thrust
-			if (localThrust < takeOffThrust){
-				resetIntegralErrorPID(&PID_att);
-			}
+		//Control attitude if in attitude / position modes
+		if((localCurrentState == ATTITUDE_MODE) ||
+		   (localCurrentState == POSITION_JOY_MODE) ||
+		   (localCurrentState == POSITION_ROS_MODE)){
 			
-			//Reference for inner loop (angular velocity control)
-			wDes = outputPID(PID_att);
+			pthread_mutex_lock(&YawSource_Mutex);
+				localYawSource = YawSource;
+			pthread_mutex_unlock(&YawSource_Mutex);
 
-			//Calculate angular velocity error and update PID
-			error_att_vel = Subtract3x1Vec(wDes, IMU_localData_Vel);
-			updateErrorPID(&PID_angVel, feedforward, error_att_vel, zeros, dt);
-
-			if (localThrust < takeOffThrust){
-				resetIntegralErrorPID(&PID_angVel);
+			//Grab attitude estimation
+			if (localYawSource == _IMU){
+				pthread_mutex_lock(&IMU_Mutex);
+					IMU_localData_Quat = IMU_Data_Quat;
+					IMU_localData_Vel = IMU_Data_AngVel;
+					IMU_localData_RPY = IMU_Data_RPY;
+				pthread_mutex_unlock(&IMU_Mutex);
+			}
+			else{
+				pthread_mutex_lock(&PVA_Vicon_Mutex);
+					IMU_localData_Quat = IMU_Data_Quat_ViconYaw;
+				pthread_mutex_unlock(&PVA_Vicon_Mutex);
+				pthread_mutex_lock(&IMU_Mutex);
+					IMU_localData_Vel = IMU_Data_AngVel;
+					IMU_localData_RPY = IMU_Data_RPY;
+				pthread_mutex_unlock(&IMU_Mutex);
 			}
 
-			//This scale of 16.0 should be excluded eventually (incorporate it in gains)
-			inputTorque = ScaleVec3(outputPID(PID_angVel), 1.0/16.0);
-		pthread_mutex_unlock(&PID_Mutex);
+			Rbw = Quat2rot(IMU_localData_Quat);
+
+		    //Calculate attitude error
+		    error_att = AttitudeErrorVector(Rbw, Rdes);
+		    //PrintVec3(error_att, "error_att"); 
+
+			//Update PID
+			pthread_mutex_lock(&PID_Mutex);
+				if(!isNanVec3(error_att)){
+					updateErrorPID(&PID_att, feedforward, error_att, zeros, dt);
+				}
+
+				//Dont integrate integrator if not in minimum thrust
+				if (localThrust < takeOffThrust){
+					resetIntegralErrorPID(&PID_att);
+				}
+				
+				//Reference for inner loop (angular velocity control)
+				wDes = outputPID(PID_att);
+
+				//Calculate angular velocity error and update PID
+				error_att_vel = Subtract3x1Vec(wDes, IMU_localData_Vel);
+				updateErrorPID(&PID_angVel, feedforward, error_att_vel, zeros, dt);
+
+				if (localThrust < takeOffThrust){
+					resetIntegralErrorPID(&PID_angVel);
+				}
+
+				//This scale of 16.0 should be excluded eventually (incorporate it in gains)
+				inputTorque = ScaleVec3(outputPID(PID_angVel), 1.0/16.0);
+			pthread_mutex_unlock(&PID_Mutex);
+
+		}
 
 		//Distribute power to motors
 		pthread_mutex_lock(&Contr_Input_Mutex);
@@ -190,7 +199,6 @@ void *AttControl_Task(void *threadID){
 		pthread_mutex_lock(&PCA_Mutex);
 			PCA_Data = PCA_localData;
 		pthread_mutex_unlock(&PCA_Mutex);
-
 
 	}
 	
