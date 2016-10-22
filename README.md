@@ -128,7 +128,7 @@ The quadcopter can take either yaw data from IMU or Vicon. It can only go to pos
 
 ## To-do list
 
-[] Complete documentation of joystick and keyboard commands.
-[] Use Eigen3 to represent all vectors and matrices.
-[] Implement FSM transitions.
-[] Transition to safe-mode if the onboard software or communication terminated unexpectedly.
+- [] Complete documentation of joystick and keyboard commands.
+- [] Use Eigen3 to represent all vectors and matrices.
+- [] Implement FSM transitions.
+- [] Transition to safe-mode if the onboard software or communication terminated unexpectedly.
