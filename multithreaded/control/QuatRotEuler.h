@@ -21,13 +21,13 @@ Matrix<float, 3, 3> RPY2Rot(double roll, double pitch, double yaw);
 Matrix<float, 3, 3> Quat2rot(Matrix<float, 4, 1> q);
 
 //Convert rotation matrix to quaternion
-Vec4 Rot2quat(Matrix<float, 3, 3> M);
+Matrix<float, 4, 1> Rot2quat(Matrix<float, 3, 3> M);
 
 //Convert quaternion to Roll-Pitch-Yaw
-Vec3 Quat2RPY(Vec4 q);
+Matrix<float, 3, 3> Quat2RPY(Matrix<float, 4, 4> q);
 
 // Quaternion Multiplication
-Vec4 QuaternionProduct(Matrix<float, 4, 1> q1, Matrix<float, 4, 1> q2);
+Matrix<float, 4, 1> QuaternionProduct(Matrix<float, 4, 1> q1, Matrix<float, 4, 1> q2);
 
 //Triad Algorithm for Finding attitude from two vectors
 Matrix<float, 3, 3> Triad(Matrix<float, 3, 1> V1_body,Matrix<float, 3, 1> V2_body,Matrix<float, 3, 1> V1_inertial,Matrix<float, 3, 1> V2_inertial);

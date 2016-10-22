@@ -66,68 +66,64 @@ Matrix<float, 3, 3> Quat2rot(Matrix<float, 4, 1> q){
 
 //Convert rotation matrix to quaternion
 //http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
-Vec4 Rot2quat(Matrix<float, 3, 3> M){
+Matrix<float, 4, 1> Rot2quat(Matrix<float, 3, 3> M){
 	double trace = M.trace();
-	Vec4 q;
+	Matrix<float, 4, 1> q;
 	if (trace > 0) {// M_EPSILON = 0
 		double s = 0.5 / sqrt(trace + 1.0);
-		q.v[0] = 0.25 / s;
-		q.v[1] = (M(2,1) - M(1,2)) * s;
-		q.v[2] = (M(0,2) - M(2,0)) * s;
-		q.v[3] = (M(1,0) - M(0,1)) * s;
+		q << 0.25 / s,
+			(M(2,1) - M(1,2)) * s,
+			(M(0,2) - M(2,0)) * s,
+			(M(1,0) - M(0,1)) * s;
 	}
 	else {
 		if (M(0,0) > M(1,1) && M(0,0) > M(2,2)) {
 			double s = 2.0 * sqrt(1.0 + M(0,0) - M(1,1) - M(2,2));
-			q.v[0] = (M(2,1) - M(1,2)) / s;
-			q.v[1] = 0.25 * s;
-			q.v[2] = (M(0,1) + M(1,0)) / s;
-			q.v[3] = (M(0,2) + M(2,0)) / s;
+			q << (M(2,1) - M(1,2)) / s,
+				 0.25 * s,
+				 (M(0,1) + M(1,0)) / s,
+				 (M(0,2) + M(2,0)) / s;
 		}
 		else if (M(1,1) > M(2,2)) {
 			double s = 2.0 * sqrt(1.0 + M(1,1) - M(0,0) - M(2,2));
-			q.v[0] = (M(0,2) - M(2,0)) / s;
-			q.v[1] = (M(0,1) + M(1,0)) / s;
-			q.v[2] = 0.25 * s;
-			q.v[3] = (M(1,2) + M(2,1)) / s;
+			q << (M(0,2) - M(2,0)) / s;
+			     (M(0,1) + M(1,0)) / s;
+			     0.25 * s;
+			     (M(1,2) + M(2,1)) / s;
 		}
 		else {
 			double s = 2.0 * sqrt(1.0 + M(2,2) - M(0,0) - M(1,1));
-			q.v[0] = (M(1,0) - M(0,1)) / s;
-			q.v[1] = (M(0,2) + M(2,0)) / s;
-			q.v[2] = (M(1,2) + M(2,1)) / s;
-			q.v[3] = 0.25 * s;
+			q << (M(1,0) - M(0,1)) / s;
+			     (M(0,2) + M(2,0)) / s;
+			     (M(1,2) + M(2,1)) / s;
+			     0.25 * s;
 		}
 	}
         return q;
 }
 
 //Convert quaternion to Roll-Pitch-Yaw
-Vec3 Quat2RPY(Vec4 q){
-	float q0 = q.v[0];
-	float q1 = q.v[1];
-	float q2 = q.v[2];
-	float q3 = q.v[3];
+Matrix<float, 3, 1> Quat2RPY(Matrix<float, 4, 1> q){
 
-	Vec3 RPY;
+	Matrix<float, 3, 1> RPY;
 
-	RPY.v[0] = atan2(2*(q0*q1 + q2*q3) , 1 - 2*(q1*q1 + q2*q2) );	//Roll
-	RPY.v[1] = asin(2*(q0*q2 - q3*q1));				//Pitch
-	RPY.v[2] = atan2(2*(q0*q3 + q1*q2),1 - 2*(q2*q2 + q3*q3) );	//Yaw
+	RPY << atan2(2*(q(0)*q(1) + q(2)*q(3)) , 1 - 2*(q(1)*q(1) + q(2)*q(2)) ),	//Roll
+		   asin(2*(q(0)*q(2) - q(3)*q(1))),				//Pitch
+		   atan2(2*(q(0)*q(3) + q(1)*q(2)),1 - 2*(q(2)*q(2) + q(3)*q(3)) );	//Yaw
 
 	return RPY;
 }
 
 // Quaternion Multiplication
-Vec4 QuaternionProduct(Vec4 q1, Vec4 q2){
-	Mat4x4 H;
-	H.M[0][0] = q1.v[0]; H.M[0][1] = -q1.v[1]; H.M[0][2] = -q1.v[2]; H.M[0][3] = -q1.v[3];
-	H.M[1][0] = q1.v[1]; H.M[1][1] =  q1.v[0]; H.M[1][2] = -q1.v[3]; H.M[1][3] =  q1.v[2];
-	H.M[2][0] = q1.v[2]; H.M[2][1] =  q1.v[3]; H.M[2][2] =  q1.v[0]; H.M[2][3] = -q1.v[1];
-	H.M[3][0] = q1.v[3]; H.M[3][1] = -q1.v[2]; H.M[3][2] =  q1.v[1]; H.M[3][3] =  q1.v[0];
+// Matrix<float, 4, 1> QuaternionProduct(Matrix<float, 4, 1> q1, Matrix<float, 4, 1> q2){
+// 	Mat4x4 H;
+// 	H.M[0][0] = q1.v[0]; H.M[0][1] = -q1.v[1]; H.M[0][2] = -q1.v[2]; H.M[0][3] = -q1.v[3];
+// 	H.M[1][0] = q1.v[1]; H.M[1][1] =  q1.v[0]; H.M[1][2] = -q1.v[3]; H.M[1][3] =  q1.v[2];
+// 	H.M[2][0] = q1.v[2]; H.M[2][1] =  q1.v[3]; H.M[2][2] =  q1.v[0]; H.M[2][3] = -q1.v[1];
+// 	H.M[3][0] = q1.v[3]; H.M[3][1] = -q1.v[2]; H.M[3][2] =  q1.v[1]; H.M[3][3] =  q1.v[0];
 
-	return MultiplyMat4x4Vec4(H, q2);
-}
+// 	return MultiplyMat4x4Vec4(H, q2);
+// }
 
 //Triad Algorithm for Finding attitude from two vectors
 // https://en.wikipedia.org/wiki/Triad_method
