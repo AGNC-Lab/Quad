@@ -107,11 +107,27 @@ The following joystick buttons corresponds to:
 * Y Joystick Attitude Mode
 	* ROS topic: /pva
 
+The following keyboard keys corresponds to:
+
+* v: Switch attiude estimate source between Vicon and IMU
+* w: Increase motors speed
+* s: Decrease motors speed
+* k: Stop motors
+* 1: Roll, pitch and yaw estimate from IMU
+* 2: Quaternion from IMU
+* 3: Position, velocity and acceleration estimate from Kalman filter
+* 4: Control input
+* 5: Veloctiy estimate from IMU
+* 6: Roll, pitch and yaw referece from joystick
+* 7: Position and velocity estimate from Vicon
+* 8: Integral term for the attitude PID controller
+* 9: Motor speed/Thrust
+* ESC: Software graceful exit
+
 The quadcopter can take either yaw data from IMU or Vicon. It can only go to position control mode with Vicon Yaw data. in order to switch Yaw source, type 'v'.
 
 ## To-do list
 
-* List with description all keyboard and joystick commands.  
 * Use Eigen3 to represent all vectors and matrices.
 * Implement FSM transitions.
 * Transition to safe-mode if the onboard software or communication terminated unexpectedly.
