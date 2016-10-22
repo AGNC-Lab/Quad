@@ -96,7 +96,7 @@ sudo ufw disable
 
 ## Flying the quadrotor
 
-*The following joystick buttons corresponds to:*
+**The following joystick buttons corresponds to:**
 
 * A: Joystick Motor Mode
 	* ROS topic: /joy
