@@ -96,15 +96,15 @@ sudo ufw disable
 
 ## Flying the quadrotor
 
-The following joystick buttons corresponds to:
+*The following joystick buttons corresponds to:*
 
-* A Joystick Motor Mode
+* A: Joystick Motor Mode
 	* ROS topic: /joy
-* B Client Position Control Mode
+* B: Client Position Control Mode
 	* ROS topic: /pva
-* X Joystick Position Control Mode
+* X: Joystick Position Control Mode
 	* ROS topic: /joy
-* Y Joystick Attitude Mode
+* Y: Joystick Attitude Mode
 	* ROS topic: /pva
 
 The following keyboard keys corresponds to:
