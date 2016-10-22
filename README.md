@@ -98,9 +98,20 @@ sudo ufw disable
 
 The following joystick buttons corresponds to:
 
-* A Motor Mode
-* B None
-* X Position Control
-* Y Attitude Mode
+* A Joystick Motor Mode
+	* ROS topic: /joy
+* B Client Position Control Mode
+	* ROS topic: /pva
+* X Joystick Position Control Mode
+	* ROS topic: /joy
+* Y Joystick Attitude Mode
+	* ROS topic: /pva
 
 The quadcopter can take either yaw data from IMU or Vicon. It can only go to position control mode with Vicon Yaw data. in order to switch Yaw source, type 'v'.
+
+## To-do list
+
+* List with description all keyboard and joystick commands.  
+* Use Eigen3 to represent all vectors and matrices.
+* Implement FSM transitions.
+* Transition to safe-mode if the onboard software or communication terminated unexpectedly.
