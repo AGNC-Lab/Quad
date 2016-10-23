@@ -2,10 +2,11 @@
 
 #include "threads/Ros_threads.h"
 
-Vec3 RPY_Vicon;
-Vec4 Quat_vicon;
-Vec4 IMU_localData_QuatViconYaw, IMU_localData_QuatNoYaw;
-Vec4 Vicon_YawQuat;
+
+Matrix<float, 3, 1> RPY_Vicon;
+Matrix<float, 4, 1> Quat_vicon;
+Matrix<float, 4, 1> IMU_localData_QuatViconYaw, IMU_localData_QuatNoYaw;
+Matrix<float, 4, 1> Vicon_YawQuat;
 int ButtonX = 0;
 int ButtonY = 0;
 int ButtonA = 0;
@@ -56,7 +57,7 @@ void handle_client_pva_msg(const qcontrol_defs::PVA& msg){
 void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 	float yaw_ctr_pos, yaw_ctr_neg;
 	int localCurrentState, localYawSource;
-	Vec3 IMU_localData_RPY, IMU_localData_RPY_ViconYaw;
+	Matrix<float, 3, 1> IMU_localData_RPY, IMU_localData_RPY_ViconYaw;
 	qcontrol_defs::PVA localPVA_quadVicon;
 
 	//Grab attitude estimation
@@ -90,20 +91,20 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 
 		//Set attitude with zero error
 		pthread_mutex_lock(&attRefJoy_Mutex);	
-			attRefJoy.v[0] = IMU_localData_RPY.v[0]; //Set ref to actual IMU value
-			attRefJoy.v[1] = IMU_localData_RPY.v[1]; //Set ref to actual IMU value
+			attRefJoy(0) = IMU_localData_RPY(0); //Set ref to actual IMU value
+			attRefJoy(1) = IMU_localData_RPY(1); //Set ref to actual IMU value
 			
 			//Set yaw reference to measured yaw
 			if(localYawSource == _IMU){
-				attRefJoy.v[2] = IMU_localData_RPY.v[2];
+				attRefJoy(2) = IMU_localData_RPY(2);
 			}
 			else if (localYawSource == _VICON){
-				attRefJoy.v[2] = IMU_localData_RPY_ViconYaw.v[2];
+				attRefJoy(2) = IMU_localData_RPY_ViconYaw(2);
 			}
 
-			angVelRefJoy.v[0] = 0;
-			angVelRefJoy.v[1] = 0;
-			angVelRefJoy.v[2] = 0;
+			angVelRefJoy(0) = 0;
+			angVelRefJoy(1) = 0;
+			angVelRefJoy(2) = 0;
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
 	
@@ -115,27 +116,27 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 
 		//Set references
 		pthread_mutex_lock(&attRefJoy_Mutex);	
-			angVelRefJoy.v[0] = 0;
-			angVelRefJoy.v[1] = 0;
-			angVelRefJoy.v[2] = 0;
-			attRefJoy.v[0] = -msg.axes[3]*PI/6; //roll
-			attRefJoy.v[1] = msg.axes[4]*PI/6; //pitch
+			angVelRefJoy(0) = 0;
+			angVelRefJoy(1) = 0;
+			angVelRefJoy(2) = 0;
+			attRefJoy(0) = -msg.axes[3]*PI/6; //roll
+			attRefJoy(1) = msg.axes[4]*PI/6; //pitch
 
 			//Set yaw to measured yaw if quad isnt flying
 			if (msg.axes[1] <= 0) {
 				if(localYawSource == _IMU){
-					attRefJoy.v[2] = IMU_localData_RPY.v[2];
+					attRefJoy(2) = IMU_localData_RPY(2);
 				}
 				else if (localYawSource == _VICON){
-					attRefJoy.v[2] = IMU_localData_RPY_ViconYaw.v[2];
+					attRefJoy(2) = IMU_localData_RPY_ViconYaw(2);
 				}
 		    }
 		    else{ //If quad is flying, increment yaw
 		    	if (yaw_ctr_neg < 0) {
-					attRefJoy.v[2] -= yaw_Inc;
+					attRefJoy(2) -= yaw_Inc;
 				}								//yaw
 				if (yaw_ctr_pos < 0) {
-					attRefJoy.v[2] += yaw_Inc;
+					attRefJoy(2) += yaw_Inc;
 				}
 		    }
 		pthread_mutex_unlock(&attRefJoy_Mutex);
@@ -187,25 +188,25 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 
 		//Set attitude with zero error
 		pthread_mutex_lock(&attRefJoy_Mutex);	
-			attRefJoy.v[0] = IMU_localData_RPY.v[0]; //Set ref to actual IMU value
-			attRefJoy.v[1] = IMU_localData_RPY.v[1]; //Set ref to actual IMU value
+			attRefJoy(0) = IMU_localData_RPY(0); //Set ref to actual IMU value
+			attRefJoy(1) = IMU_localData_RPY(1); //Set ref to actual IMU value
 			
 			//Set yaw to measured yaw if quad isnt flying
 			if (msg.axes[1] <= 0) {
 				if(localYawSource == _IMU){
-					attRefJoy.v[2] = IMU_localData_RPY.v[2];
+					attRefJoy(2) = IMU_localData_RPY(2);
 				}
 				else if (localYawSource == _VICON){
-					attRefJoy.v[2] = IMU_localData_RPY_ViconYaw.v[2];
+					attRefJoy(2) = IMU_localData_RPY_ViconYaw(2);
 				}
 		    }
-			angVelRefJoy.v[0] = 0;
-			angVelRefJoy.v[1] = 0;
-			angVelRefJoy.v[2] = 0;
+			angVelRefJoy(0) = 0;
+			angVelRefJoy(1) = 0;
+			angVelRefJoy(2) = 0;
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
 
-	// printf("Angvel: %f %f %f", angVelRefJoy.v[0],angVelRefJoy.v[1], angVelRefJoy.v[2]);
+	// printf("Angvel: %f %f %f", angVelRefJoy(0),angVelRefJoy(1), angVelRefJoy(2));
 	
 	//Compare joystick buttons with previously read (check if state changed)
 	if (msg.buttons[0] && !ButtonA){
@@ -257,16 +258,17 @@ void handle_Vicon(const geometry_msgs::TransformStamped& msg){
   	pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
   	//Get yaw from vicon measurement and include it into measured quaternion
-  	Quat_vicon.v[0] = msg.transform.rotation.w;
-  	Quat_vicon.v[1] = msg.transform.rotation.x;
-  	Quat_vicon.v[2] = msg.transform.rotation.y;
-  	Quat_vicon.v[3] = msg.transform.rotation.z;
+  	Quat_vicon << msg.transform.rotation.w,
+  				  msg.transform.rotation.x,
+  				  msg.transform.rotation.y,
+  				  msg.transform.rotation.z;
+
   	RPY_Vicon = Quat2RPY(Quat_vicon);
 
-	Vicon_YawQuat.v[0] = cos(RPY_Vicon.v[2]/2);
-	Vicon_YawQuat.v[1] = 0;
-	Vicon_YawQuat.v[2] = 0;
-	Vicon_YawQuat.v[3] = sin(RPY_Vicon.v[2]/2);
+	Vicon_YawQuat(0) = cos(RPY_Vicon(2)/2);
+	Vicon_YawQuat(1) = 0;
+	Vicon_YawQuat(2) = 0;
+	Vicon_YawQuat(3) = sin(RPY_Vicon(2)/2);
 
 	pthread_mutex_lock(&IMU_Mutex);
 		IMU_localData_QuatNoYaw = IMU_Data_QuatNoYaw;

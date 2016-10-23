@@ -54,37 +54,46 @@ This algorithm was extracted from Mellinger, 2011: Minimum Snap Trajectory Gener
 Matrix<float, 4, 1> attitudeControl(Matrix<float, 4, 1> q, Matrix<float, 3, 3> Rdes, Matrix<float, 3, 1> w_bw, Matrix<float, 3, 1> wDes, float u1){
 	
 	//Controller gain matrices
-	double K_eVec[] = { K_ROLL, K_PITCH, K_YAW };	//Attitude error gains
-	double K_wVec[] = { K_WX, K_WY, K_WZ };			//Angular velocity gains
-	Matrix<float, 3, 3> K_r = Diag3(K_eVec);
-	Matrix<float, 3, 3> K_w = Diag3(K_wVec);
+	Matrix<float, 3, 1> K_eVec, K_wVec, e_r, e_w, u_att;
+	Matrix<float, 4, 1> u;
+	Matrix<float, 3, 3> K_r, K_w, Rbw;
+
+	K_eVec << K_ROLL,
+			  K_PITCH,
+			  K_YAW;	//Attitude error gains
+	K_wVec << K_WX,
+			  K_WY,
+			  K_WZ;			//Angular velocity gains
+
+	K_r = K_eVec.asDiagonal();
+	K_w = K_wVec.asDiagonal();
 
 	//Get rotation matrix from quaternion
-	Matrix<float, 3, 3> Rbw = Quat2rot(q); //Matrix obtained in the NED parameterization
+	Rbw = Quat2rot(q); //Matrix obtained in the NED parameterization
         //PrintMat3x3(Rbw);
 	//PrintMat3x3(Rdes);
 	
 	//Attitude error: e_r = 0.5*invSkew(Rref'*Rbw - Rbw'*Rref)
-	Matrix<float, 3, 1> e_r = AttitudeErrorVector(Rbw, Rdes);
+	e_r = AttitudeErrorVector(Rbw, Rdes);
 	//PrintVec3(e_r, "ErrorAtt");
 
 	//Angular velocity error: e_w = w_bw - wDes
-	Matrix<float, 3, 1> e_w = Subtract3x1Vec(w_bw,wDes);
+	e_w = w_bw-wDes;
 
 	//Attitude control input: u_att = -K_r*e_r - K_w*e_w
-	Matrix<float, 3, 1> u_att = AttitudeControlInputs(K_r, K_w, e_r, e_w);
+	u_att = AttitudeControlInputs(K_r, K_w, e_r, e_w);
 
 	//Saturate the attitude torques to the system so that they are not too high
-	u_att.v[0] = saturate(u_att.v[0], -20, 20);
-	u_att.v[1] = saturate(u_att.v[1], -20, 20);
-	u_att.v[2] = saturate(u_att.v[2], -20, 20);
+	u_att << saturate(u_att(0), -20, 20),
+			 saturate(u_att(1), -20, 20),
+			 saturate(u_att(2), -20, 20);
 
 	//Output variable (the negatives below are due to the fact of using NED coordinates instead of NWU)
-	Matrix<float, 4, 1> u;
-	u.v[0] = u1;
-	u.v[1] = u_att.v[0];
-	u.v[2] = u_att.v[1];
-	u.v[3] = u_att.v[2];
+	
+	u <<       u1,
+		 u_att(0),
+		 u_att(1),
+		 u_att(2);
 
 	return u;
 }
@@ -100,41 +109,28 @@ Matrix<float, 4, 1> u2pwmTshape(Matrix<float, 4, 1> u){
 	//u = M.pwm^2 ==> pwm^2 = inv(M)*u
 
 	Matrix<float, 4, 4> inv_M;
-	inv_M.M[0][0] = 1 / (4 * KT); 
-	inv_M.M[0][1] = 0;                  
-	inv_M.M[0][2] = -1 / (2 * KT * RAD);
-	inv_M.M[0][3] = 1 / (4 * KM);
+	Matrix<float, 4, 1> pwm_squared, pwm;
 
-	inv_M.M[1][0] = 1 / (4 * KT); 
-	inv_M.M[1][1] = -1 / (2 * KT * RAD); 
-	inv_M.M[1][2] = 0;
-	inv_M.M[1][3] = -1 / (4 * KM);
+	inv_M << 1 / (4 * KT), 0, -1 / (2 * KT * RAD), 1 / (4 * KM),
+			 1 / (4 * KT), -1 / (2 * KT * RAD), 0, -1 / (4 * KM),
+			 1 / (4 * KT), 0, 1 / (2 * KT * RAD), 1 / (4 * KM),
+			 1 / (4 * KT), 1 / (2 * KT * RAD), 0, -1 / (4 * KM);
 
-	inv_M.M[2][0] = 1 / (4 * KT);
-	inv_M.M[2][1] = 0;
-	inv_M.M[2][2] = 1 / (2 * KT * RAD);
-	inv_M.M[2][3] = 1 / (4 * KM);
-
-	inv_M.M[3][0] = 1 / (4 * KT);
-	inv_M.M[3][1] = 1 / (2 * KT * RAD);
-	inv_M.M[3][2] = 0;
-	inv_M.M[3][3] = -1 / (4 * KM);
-
-	Matrix<float, 4, 1> pwm_squared = MultiplyMat4x4Vec4(inv_M, u);
+	
+	pwm_squared = inv_M*u;
 
 	//Saturate pwm values before taking square root to avoid square root of negative numbers
-	float mean_pwmSq = u.v[0] / (4 * KT);
-	pwm_squared.v[0] = saturate(pwm_squared.v[0], 0, 2 * mean_pwmSq);
-	pwm_squared.v[1] = saturate(pwm_squared.v[1], 0, 2 * mean_pwmSq);
-	pwm_squared.v[2] = saturate(pwm_squared.v[2], 0, 2 * mean_pwmSq);
-	pwm_squared.v[3] = saturate(pwm_squared.v[3], 0, 2 * mean_pwmSq);
+	float mean_pwmSq = u(0) / (4 * KT);
+	pwm_squared << saturate(pwm_squared(0), 0, 2 * mean_pwmSq),
+				   saturate(pwm_squared(1), 0, 2 * mean_pwmSq),
+				   saturate(pwm_squared(2), 0, 2 * mean_pwmSq),
+				   saturate(pwm_squared(3), 0, 2 * mean_pwmSq);
 
 	//Assign outputs (note that Mikicopter assign minimum value at 1000
-	Matrix<float, 4, 1> pwm;
-	pwm.v[0] = sqrt(pwm_squared.v[0])/1000;
-	pwm.v[1] = sqrt(pwm_squared.v[1])/1000;
-	pwm.v[2] = sqrt(pwm_squared.v[2])/1000;
-	pwm.v[3] = sqrt(pwm_squared.v[3])/1000;
+	pwm << sqrt(pwm_squared(0))/1000,
+		   sqrt(pwm_squared(1))/1000,
+		   sqrt(pwm_squared(2))/1000,
+		   sqrt(pwm_squared(3))/1000;
 //PrintVec4(pwm,"pwm");
 	return pwm;
 }
@@ -158,7 +154,7 @@ Matrix<float, 4, 1> u2pwmXshape(Matrix<float, 4, 1> u){
 	Rot << 1,           0,          0, 0,
 		   0,  cos(angle), sin(angle), 0,
 		   0, -sin(angle), cos(angle), 0,
-		   0,           0,          0, 1
+		   0,           0,          0, 1;
 	//PrintVec4(u,"u");
 
 	//Multiply inverse of rotation matrix by input u

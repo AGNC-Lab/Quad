@@ -60,7 +60,7 @@ Matrix<float, 3, 1> invSkew(Matrix<float, 3, 3> Mat);
 // double p_normVec3(Vec3 V, int p);
 
 // //Normalize a vector into unit norm
-// Vec3 normalizeVec3(Vec3 V);
+Matrix<float, 3, 1> normalizeVec3(Matrix<float, 3, 1> V);
 
 // //Inner product between two matrices
 // double innerProd(Vec3 V1, Vec3 V2);
@@ -96,7 +96,7 @@ void PrintVec4(Matrix<float, 4, 1> V, char const *Text);
 // // Mat3x3 Concatenate3Vec3_2_Mat3x3(Vec3 V1, Vec3 V2, Vec3 V3);
 
 // //Verify if any of the terms in a Vec3 is NaN
-// int isNanVec3(Vec3 V);
+int isNanVec3(Matrix<float, 3, 1> V);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

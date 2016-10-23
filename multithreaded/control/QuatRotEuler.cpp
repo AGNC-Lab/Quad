@@ -115,15 +115,15 @@ Matrix<float, 3, 1> Quat2RPY(Matrix<float, 4, 1> q){
 }
 
 // Quaternion Multiplication
-// Matrix<float, 4, 1> QuaternionProduct(Matrix<float, 4, 1> q1, Matrix<float, 4, 1> q2){
-// 	Mat4x4 H;
-// 	H.M[0][0] = q1.v[0]; H.M[0][1] = -q1.v[1]; H.M[0][2] = -q1.v[2]; H.M[0][3] = -q1.v[3];
-// 	H.M[1][0] = q1.v[1]; H.M[1][1] =  q1.v[0]; H.M[1][2] = -q1.v[3]; H.M[1][3] =  q1.v[2];
-// 	H.M[2][0] = q1.v[2]; H.M[2][1] =  q1.v[3]; H.M[2][2] =  q1.v[0]; H.M[2][3] = -q1.v[1];
-// 	H.M[3][0] = q1.v[3]; H.M[3][1] = -q1.v[2]; H.M[3][2] =  q1.v[1]; H.M[3][3] =  q1.v[0];
+Matrix<float, 4, 1> QuaternionProduct(Matrix<float, 4, 1> q1, Matrix<float, 4, 1> q2){
+	Matrix<float, 4, 4> H;
+	H << q1(0), -q1(1), -q1(2), -q1(3),
+	     q1(1),  q1(0), -q1(3),  q1(2),
+	     q1(2),  q1(3),  q1(0), -q1(1),
+	     q1(3), -q1(2),  q1(1),  q1(0);
 
-// 	return MultiplyMat4x4Vec4(H, q2);
-// }
+	return H*q2;
+}
 
 //Triad Algorithm for Finding attitude from two vectors
 // https://en.wikipedia.org/wiki/Triad_method
@@ -171,9 +171,9 @@ Matrix<float, 4, 1> propagationQuat(Matrix<float, 3, 1> w, double dt){
 
 	dq(0,0) = cos(angle);
 	if (norm_w != 0){
-		// dq(1,0) << w.v[0] * sin_angle / norm_w,
-		// dq(2,0) = w.v[1] * sin_angle / norm_w;
-		// dq(3,0) = w.v[2] * sin_angle / norm_w;
+		// dq(1,0) << w(0) * sin_angle / norm_w,
+		// dq(2,0) = w(1) * sin_angle / norm_w;
+		// dq(3,0) = w(2) * sin_angle / norm_w;
 		dq.tail(3) = w * (sin_angle / norm_w);
 	}
 	else{

@@ -29,13 +29,13 @@ extern pthread_mutex_t PVA_Kalman_Mutex;
 extern neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
 
 
-extern Vec3 attRefJoy;
-extern Vec4 PCA_Data;
-extern Vec3 IMU_Data_RPY;
-extern Vec4 IMU_Data_Quat;
-extern Vec3 IMU_Data_Accel;
-extern Vec3 IMU_Data_AngVel;
-extern Vec4 Contr_Input;
+extern Matrix<float, 3, 1> attRefJoy;
+extern Matrix<float, 4, 1> PCA_Data;
+extern Matrix<float, 3, 1> IMU_Data_RPY;
+extern Matrix<float, 4, 1> IMU_Data_Quat;
+extern Matrix<float, 3, 1> IMU_Data_Accel;
+extern Matrix<float, 3, 1> IMU_Data_AngVel;
+extern Matrix<float, 4, 1> Contr_Input;
 extern qcontrol_defs::PVA PVA_quadVicon;
 extern qcontrol_defs::PVA PVA_quadKalman;
 extern PID_3DOF PID_att;

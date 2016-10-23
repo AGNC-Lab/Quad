@@ -17,7 +17,7 @@
 #include "rosserial/ros.h"
 #include "rosserial/geometry_msgs/Wrench.h"
 #include "rosserial/qcontrol_defs/PVA.h"
-
+#include <Eigen/Dense>
 #include "threads/keyboard_thread.h"
 #include "threads/control_thread.h"
 #include "threads/pca_thread.h"
@@ -33,7 +33,7 @@
 
 using namespace neosmart;
 using namespace std;
-
+using Eigen::Matrix;
 
 #define PI 3.1415
 
@@ -77,13 +77,13 @@ pthread_mutex_t YawSource_Mutex;
 //Global variables
 float ThrustJoy = 0;
 float ThrustPosControl = 0;
-Vec3 IMU_Data_RPY, IMU_Data_RPY_ViconYaw;
-Vec3 IMU_Data_Accel, IMU_Data_AngVel;
-Vec4 IMU_Data_Quat, IMU_Data_QuatNoYaw, IMU_Data_Quat_ViconYaw;
-Vec3 attRefJoy, angVelRefJoy;
-Mat3x3 Rdes_PosControl;
-Vec4 Contr_Input;
-Vec4 PCA_Data;
+Matrix<float, 3, 1> IMU_Data_RPY, IMU_Data_RPY_ViconYaw;
+Matrix<float, 3, 1> IMU_Data_Accel, IMU_Data_AngVel;
+Matrix<float, 4, 1> IMU_Data_Quat, IMU_Data_QuatNoYaw, IMU_Data_Quat_ViconYaw;
+Matrix<float, 3, 1> attRefJoy, angVelRefJoy;
+Matrix<float, 3, 3> Rdes_PosControl;
+Matrix<float, 4, 1> Contr_Input;
+Matrix<float, 4, 1> PCA_Data;
 PID_3DOF PID_angVel, PID_att, PID_pos; 	//Control PIDs
 int threadCount = 0;		//Counts active threads
 
@@ -137,7 +137,7 @@ void *rosPublisherTask(void *threadID){
 	printf("rosPublisherTask has started!\n");
 	int SamplingTime = 50;	//Sampling time in milliseconds
 	int localCurrentState, localYawSource;
-	Vec3 RPY;
+	Matrix<float, 3, 1> RPY;
 
 	//ros publisher
   	geometry_msgs::Point RPY_IMU;
@@ -181,16 +181,16 @@ void *rosPublisherTask(void *threadID){
 		//Get IMU roll pitch yaw data
 		if (localYawSource == _IMU){
 		  	pthread_mutex_lock(&IMU_Mutex);
-			  	RPY_IMU.x = IMU_Data_RPY.v[0];
-			  	RPY_IMU.y = IMU_Data_RPY.v[1];
-			  	RPY_IMU.z = IMU_Data_RPY.v[2];
+			  	RPY_IMU.x = IMU_Data_RPY(0);
+			  	RPY_IMU.y = IMU_Data_RPY(1);
+			  	RPY_IMU.z = IMU_Data_RPY(2);
 		  	pthread_mutex_unlock(&IMU_Mutex);
 		}
 		else{ //Get IMU roll and pitch; yaw comes from vicon
 			pthread_mutex_lock(&PVA_Vicon_Mutex);
-				RPY_IMU.x = IMU_Data_RPY_ViconYaw.v[0];
-			  	RPY_IMU.y = IMU_Data_RPY_ViconYaw.v[1];
-			  	RPY_IMU.z = IMU_Data_RPY_ViconYaw.v[2];
+				RPY_IMU.x = IMU_Data_RPY_ViconYaw(0);
+			  	RPY_IMU.y = IMU_Data_RPY_ViconYaw(1);
+			  	RPY_IMU.z = IMU_Data_RPY_ViconYaw(2);
 			pthread_mutex_unlock(&PVA_Vicon_Mutex);
 		}
 
@@ -207,18 +207,18 @@ void *rosPublisherTask(void *threadID){
 		//Get attitude references
 		if(localCurrentState == ATTITUDE_MODE){
 			pthread_mutex_lock(&attRefJoy_Mutex);
-				RPY_Ref.x = attRefJoy.v[0];
-				RPY_Ref.y = attRefJoy.v[1];
-				RPY_Ref.z = attRefJoy.v[2];
+				RPY_Ref.x = attRefJoy(0);
+				RPY_Ref.y = attRefJoy(1);
+				RPY_Ref.z = attRefJoy(2);
 			pthread_mutex_unlock(&attRefJoy_Mutex);
 		}
 		else if(localCurrentState == POSITION_JOY_MODE){
 			pthread_mutex_lock(&attRefPosControl_Mutex);
 				RPY = Quat2RPY(Rot2quat(Rdes_PosControl));
 			pthread_mutex_unlock(&attRefPosControl_Mutex);
-			RPY_Ref.x = RPY.v[0];
-			RPY_Ref.y = RPY.v[1];
-			RPY_Ref.z = RPY.v[2];
+			RPY_Ref.x = RPY(0);
+			RPY_Ref.y = RPY(1);
+			RPY_Ref.z = RPY(2);
 		}
 		else{
 			RPY_Ref.x = 0;
@@ -234,10 +234,10 @@ void *rosPublisherTask(void *threadID){
 		pthread_mutex_lock(&Contr_Input_Mutex);
 			controlInputs.force.x = 0;
 			controlInputs.force.y = 0;
-			controlInputs.force.z =  Contr_Input.v[0];
-			controlInputs.torque.x = Contr_Input.v[1];
-			controlInputs.torque.y = Contr_Input.v[2];
-			controlInputs.torque.z = Contr_Input.v[3];
+			controlInputs.force.z =  Contr_Input(0);
+			controlInputs.torque.x = Contr_Input(1);
+			controlInputs.torque.y = Contr_Input(2);
+			controlInputs.torque.z = Contr_Input(3);
 		pthread_mutex_unlock(&Contr_Input_Mutex);
 
 	  	//Publish everything
@@ -272,8 +272,7 @@ void *rosPublisherTask(void *threadID){
 void *Kalman_Task(void *threadID){
 	int SamplingTime = 10;	//Sampling time in milliseconds
 	int localCurrentState;
-	Vec3 Zeros;
-	Zeros.v[0] = 0; Zeros.v[1] = 0; Zeros.v[2] = 0;
+	Matrix<float, 3, 1> Zeros = Matrix<float, 3, 1>::Zero();
 
 	ros::Time current_time = ros::Time(0,0);
 	ros::Time prev_time = ros::Time(0,0);
@@ -281,10 +280,10 @@ void *Kalman_Task(void *threadID){
 	Eigen::Matrix<float, 12, 1> kalman_state = Eigen::Matrix<float, 12, 1>::Zero();
     Eigen::Matrix<float, 3, 1> z;   // measurement vector
     qcontrol_defs::PVA localPVA_quadVicon;
-    Vec3 IMU_localData_Accel = Zeros;
-    Vec3 prev_IMU_localData_Accel = Zeros;
-    Vec4 IMU_localData_Quat;
-    Mat3x3 Rbw;
+    Matrix<float, 3, 1> IMU_localData_Accel = Zeros;
+    Matrix<float, 3, 1> prev_IMU_localData_Accel = Zeros;
+    Matrix<float, 4, 1> IMU_localData_Quat;
+    Matrix<float, 3, 3> Rbw;
 
     kalman_init(); //Initialize kalman filter
 
@@ -337,12 +336,12 @@ void *Kalman_Task(void *threadID){
 			Rbw = Quat2rot(IMU_localData_Quat);
 
 			//Rotate acceleration into inertial frame
-			IMU_localData_Accel = MultiplyMat3x3Vec3(Rbw, IMU_localData_Accel);
+			IMU_localData_Accel = Rbw*IMU_localData_Accel;
 
 			//Measurement vector z
-			z <<  IMU_localData_Accel.v[0],
-			      IMU_localData_Accel.v[1],
-			      IMU_localData_Accel.v[2];
+			z <<  IMU_localData_Accel(0),
+			      IMU_localData_Accel(1),
+			      IMU_localData_Accel(2);
 
 			kalman_state = kalman_estimate_acc(z);	
 		}
@@ -411,7 +410,7 @@ int main(int argc, char *argv[])
 	_nh.initNode(rosSrvrIp);
 
 	//Set initial reference
-	attRefJoy.v[0] = 0; attRefJoy.v[1] = 0; attRefJoy.v[2] = 0;
+	attRefJoy(0) = 0; attRefJoy(1) = 0; attRefJoy(2) = 0;
 	PVA_RefJoy.pos.position.x = 0;
 	PVA_RefJoy.pos.position.y = 0;
 	PVA_RefJoy.pos.position.z = 1;

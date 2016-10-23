@@ -1,6 +1,3 @@
-
-
-#include "control/MatricesAndVectors.h"
 #include "control/QuatRotEuler.h"
 #include "threads/stateMachine.h"
 // #include "rosserial/ros.h"
@@ -9,6 +6,8 @@
 #include "rosserial/geometry_msgs/TransformStamped.h"
 #include "rosserial/qcontrol_defs/PVA.h"
 #include "kalman.h"
+#include <Eigen/Dense>
+using Eigen::Matrix;
 
 extern qcontrol_defs::PVA PVA_quadVicon, PVA_RefJoy;
 extern qcontrol_defs::PVA PVA_RefClient;
@@ -30,10 +29,10 @@ extern pthread_mutex_t posRefJoy_Mutex;
 
 //Global variables
 extern float ThrustJoy;
-extern Vec3 IMU_Data_RPY, IMU_Data_RPY_ViconYaw;
-extern Vec3 attRefJoy, angVelRefJoy;
-extern Vec4 IMU_Data_QuatNoYaw, IMU_Data_Quat_ViconYaw;
-extern Vec4 Contr_Input;
+extern Matrix<float, 3, 1> IMU_Data_RPY, IMU_Data_RPY_ViconYaw;
+extern Matrix<float, 3, 1> attRefJoy, angVelRefJoy;
+extern Matrix<float, 4, 1> IMU_Data_QuatNoYaw, IMU_Data_Quat_ViconYaw;
+extern Matrix<float, 4, 1> Contr_Input;
 extern int threadCount;		//Counts active threads
 
 #define PI 3.1415

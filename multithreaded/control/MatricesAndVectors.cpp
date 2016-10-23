@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 using Eigen::Matrix;
 /* Create a 3x3 diagonal matrix from a 3x1 vector */
-// Mat3x3 Diag3(double vec[3]){
+// Matrix3f Diag3(double vec[3]){
 // 	Mat3x3 output;
 // 	for (int i = 0; i < 3; i++){
 // 		for (int j = 0; j < 3; j++){
@@ -80,15 +80,15 @@ using Eigen::Matrix;
 // Mat3x3 skew(Vec3 V){
 // 	Mat3x3 M;
 // 	M.M[0][0] = 0;
-// 	M.M[0][1] = -V.v[2];
-// 	M.M[0][2] = V.v[1];
+// 	M.M[0][1] = -V(2);
+// 	M.M[0][2] = V(1);
 
-// 	M.M[1][0] = V.v[2];
+// 	M.M[1][0] = V(2);
 // 	M.M[1][1] = 0;
-// 	M.M[1][2] = -V.v[0];
+// 	M.M[1][2] = -V(0);
 
-// 	M.M[2][0] = -V.v[1];
-// 	M.M[2][1] = V.v[0];
+// 	M.M[2][0] = -V(1);
+// 	M.M[2][1] = V(0);
 // 	M.M[2][2] = 0;
 
 // 	return M;
@@ -99,9 +99,9 @@ using Eigen::Matrix;
 Matrix<float, 3, 1> invSkew(Matrix<float, 3, 3> Mat){
 	Matrix<float, 3, 1> w;
 
-	w << -Mat.M[1][2],
-		  Mat.M[0][2],
-		 -Mat.M[0][1];
+	w << -Mat(1,2),
+		  Mat(0,2),
+		 -Mat(0,1);
 
 	return w;
 }
@@ -109,9 +109,9 @@ Matrix<float, 3, 1> invSkew(Matrix<float, 3, 3> Mat){
 // Vec3 invSkew(Mat3x3 Mat){
 // 	Vec3 w;
 
-// 	w.v[0] = -Mat.M[1][2];
-// 	w.v[1] = Mat.M[0][2];
-// 	w.v[2] = -Mat.M[0][1];
+// 	w(0) = -Mat.M[1][2];
+// 	w(1) = Mat.M[0][2];
+// 	w(2) = -Mat.M[0][1];
 
 // 	return w;
 // }
@@ -125,13 +125,13 @@ Matrix<float, 3, 1> invSkew(Matrix<float, 3, 3> Mat){
 
 //Calculate the p-norm of a 3x1 vector
 // double p_normVec3(Vec3 V, int p){
-// 	return pow(pow(V.v[0], p) + pow(V.v[1], p) + pow(V.v[2], p), 1.0 / p);
+// 	return pow(pow(V(0), p) + pow(V(1), p) + pow(V(2), p), 1.0 / p);
 // }
 
-Vec3 normalizeVec3(Vec3 V){
-	double normV = p_normVec3(V, 2);
+Matrix<float, 3, 1> normalizeVec3(Matrix<float, 3, 1> V){
+	double normV = V.norm();
 	if (normV > 0){
-		return ScaleVec3(V , 1.0 / normV);
+		return V*(1.0 / normV);
 	}
 	else{
 		return V;
@@ -140,7 +140,7 @@ Vec3 normalizeVec3(Vec3 V){
 
 //Inner product between two matrices
 // double innerProd(Vec3 V1, Vec3 V2){
-// 	return V1.v[0]*V2.v[0] + V1.v[1]*V2.v[1] + V1.v[2]*V2.v[2];
+// 	return V1(0)*V2(0) + V1(1)*V2(1) + V1(2)*V2(2);
 // }
 
 /* Print 3x3 matrices for debugging*/
@@ -211,9 +211,9 @@ void PrintVec4(Matrix<float, 4, 1> V, char const *Text){
 // Add 3x1 vectors: V_out = V1 + V2
 // Vec3 Add3x1Vec(Vec3 V1, Vec3 V2){
 // 	Vec3 V_out;
-// 	V_out.v[0] = V1.v[0] + V2.v[0];
-// 	V_out.v[1] = V1.v[1] + V2.v[1];
-// 	V_out.v[2] = V1.v[2] + V2.v[2];
+// 	V_out(0) = V1(0) + V2(0);
+// 	V_out(1) = V1(1) + V2(1);
+// 	V_out(2) = V1(2) + V2(2);
 
 // 	return V_out;
 // }
@@ -221,9 +221,9 @@ void PrintVec4(Matrix<float, 4, 1> V, char const *Text){
 // Subtract 3x1 vectors: V_out = V1 - V2
 // Vec3 Subtract3x1Vec(Vec3 V1, Vec3 V2){
 // 	Vec3 V_out;
-// 	V_out.v[0] = V1.v[0] - V2.v[0];
-// 	V_out.v[1] = V1.v[1] - V2.v[1];
-// 	V_out.v[2] = V1.v[2] - V2.v[2];
+// 	V_out(0) = V1(0) - V2(0);
+// 	V_out(1) = V1(1) - V2(1);
+// 	V_out(2) = V1(2) - V2(2);
 
 // 	return V_out;
 // }
@@ -245,30 +245,30 @@ void PrintVec4(Matrix<float, 4, 1> V, char const *Text){
 // //Concatenate three vectors into a 3x3 matrix
 // Mat3x3 Concatenate3Vec3_2_Mat3x3(Vec3 V1, Vec3 V2, Vec3 V3){
 // 	Mat3x3 M;
-// 	M.M[0][0] = V1.v[0];
-// 	M.M[1][0] = V1.v[1];
-// 	M.M[2][0] = V1.v[2];
+// 	M.M[0][0] = V1(0);
+// 	M.M[1][0] = V1(1);
+// 	M.M[2][0] = V1(2);
 
-// 	M.M[0][1] = V2.v[0];
-// 	M.M[1][1] = V2.v[1];
-// 	M.M[2][1] = V2.v[2];
+// 	M.M[0][1] = V2(0);
+// 	M.M[1][1] = V2(1);
+// 	M.M[2][1] = V2(2);
 
-// 	M.M[0][2] = V3.v[0];
-// 	M.M[1][2] = V3.v[1];
-// 	M.M[2][2] = V3.v[2];
+// 	M.M[0][2] = V3(0);
+// 	M.M[1][2] = V3(1);
+// 	M.M[2][2] = V3(2);
 
 // 	return M;
 // }
 
 
 //Verify if any of the terms in a Vec3 is NaN
-// int isNanVec3(Vec3 V){
-// 	if(isnan(V.v[0]) || isnan(V.v[1]) || isnan(V.v[2])){
-// 		printf("Not a number found!\n");
-// 		return 1;
-// 	}
-// 	else{
-// 		return 0;
-// 	}
+int isNanVec3(Matrix<float, 3, 1> V){
+	if(isnan(V(0)) || isnan(V(1)) || isnan(V(2))){
+		printf("Not a number found!\n");
+		return 1;
+	}
+	else{
+		return 0;
+	}
 
-// }
+}
