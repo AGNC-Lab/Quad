@@ -1,7 +1,8 @@
 
 
 #include "PID_3DOF.h"
-
+#include <Eigen/Dense>
+using Eigen::Matrix;
 //Sets initial errors to zero
 void initializePID(PID_3DOF* PID){
 	Matrix<float, 3, 1> zeros = Matrix<float, 3, 1>::Zero(3, 1);

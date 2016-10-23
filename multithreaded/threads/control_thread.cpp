@@ -1,8 +1,7 @@
 
 
 #include "control_thread.h"
-#include <Eigen/Dense>
-using Eigen::Matrix;
+
 
 void *AttControl_Timer(void *threadID){
 
