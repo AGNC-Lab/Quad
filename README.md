@@ -144,3 +144,4 @@ shutdown -h now
 - [ ] Transition to safe-mode if the onboard software or communication terminated unexpectedly.
 - [ ] Improve Position State Estimation
 - [ ] Add feed-forward to controllers
+- [ ] Add yaw reference for position control
