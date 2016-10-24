@@ -109,22 +109,32 @@ sudo ufw disable
 
 **The following keyboard keys corresponds to:**
 
-* v: Switch attiude estimate source between Vicon and IMU
-* w: Increase motors speed
-* s: Decrease motors speed
-* k: Stop motors
-* 1: Roll, pitch and yaw estimate from IMU
-* 2: Quaternion from IMU
-* 3: Position, velocity and acceleration estimate from Kalman filter
-* 4: Control input
-* 5: Veloctiy estimate from IMU
-* 6: Roll, pitch and yaw referece from joystick
+* v: Switch yaw estimate source between Vicon and IMU
+* w: Increase motors speed (deprecated)
+* s: Decrease motors speed (deprecated)
+* k: Stop motors (kill all motors - deprecated)
+* 1: Print Roll, pitch and yaw estimate from IMU
+* 2: Print Quaternion from IMU
+* 3: Print Position, velocity and acceleration estimate from Kalman filter
+* 4: Print Control input
+* 5: Print Angular Veloctiy estimate from IMU
+* 6: Print Roll, pitch and yaw referece from joystick
 * 7: Position and velocity estimate from Vicon
 * 8: Integral term for the attitude PID controller
 * 9: Motor speed/Thrust
-* ESC: Software graceful exit
+* 0: Update controller parameters (loads all the Config files and store contents in the PIDs)
+* ESC: Software graceful exit (Avoid ctrl+C at all costs)
 
 The quadcopter can take either yaw data from IMU or Vicon. It can only go to position control mode with Vicon Yaw data. in order to switch Yaw source, type 'v'.
+
+## Stopping flight software and turning Quadcopter off:
+
+* If the flight software is running and you want it to stop, push ESC (do not Ctrl+C unless strictly necessary!).
+* In order to turn que quad off, type (in the ssh'd terminal):
+```shell
+shutdown -h now
+```
+** Note: Don't leave the quadcopters on for too long! If the battery completely run out, they can't be recharged (and they cost $200,00). **
 
 ## To-do list
 
@@ -132,3 +142,6 @@ The quadcopter can take either yaw data from IMU or Vicon. It can only go to pos
 - [ ] Use Eigen3 to represent all vectors and matrices.
 - [ ] Implement FSM transitions.
 - [ ] Transition to safe-mode if the onboard software or communication terminated unexpectedly.
+- [ ] Improve Position State Estimation
+- [ ] Add feed-forward to controllers
+- [ ] 
