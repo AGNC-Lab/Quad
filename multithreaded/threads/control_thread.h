@@ -1,8 +1,6 @@
 #ifndef _H_CONTROL_THREAD_
 #define _H_CONTROL_THREAD_
 
-
-#include "control/MatricesAndVectors.h"
 #include "control/QuatRotEuler.h"
 #include "control/MathFuncs.h"
 #include "control/AttitudeControl.h"
@@ -13,9 +11,10 @@
 #include "threads/stateMachine.h"
 //#include "rosserial/ros.h"
 #include "rosserial/qcontrol_defs/PVA.h"
-
+#include "control/MatricesAndVectors.h"
 #define PI 3.1415
-
+#include <Eigen/Dense>
+using Eigen::Matrix;
 
 using namespace neosmart;
 
@@ -36,16 +35,16 @@ extern pthread_mutex_t ThrustPosControl_Mutex;
 extern pthread_mutex_t PVA_Kalman_Mutex;
 
 
-extern Vec3 attRefJoy, angVelRefJoy;
-extern Vec4 Contr_Input;
-extern Vec4 PCA_Data;
-extern Vec3 IMU_Data_RPY;
-extern Vec4 IMU_Data_Quat, IMU_Data_Quat_ViconYaw;
-extern Vec3 IMU_Data_AngVel;
+extern Matrix<float, 3, 1> attRefJoy, angVelRefJoy;
+extern Matrix<float, 4, 1> Contr_Input;
+extern Matrix<float, 4, 1> PCA_Data;
+extern Matrix<float, 3, 1> IMU_Data_RPY;
+extern Matrix<float, 4, 1> IMU_Data_Quat, IMU_Data_Quat_ViconYaw;
+extern Matrix<float, 3, 1> IMU_Data_AngVel;
 extern PID_3DOF PID_angVel, PID_att, PID_pos; 	//APIDs structures
 extern qcontrol_defs::PVA PVA_quadKalman, PVA_RefJoy, PVA_quadVicon, PVA_RefClient;
 extern float ThrustPosControl;
-extern Mat3x3 Rdes_PosControl;
+extern Matrix<float, 3, 3> Rdes_PosControl;
 
 
 extern pthread_mutex_t Contr_Input_Mutex;

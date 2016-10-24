@@ -16,14 +16,14 @@ using std::ostringstream;
 using namespace std;
 
 struct PID_3DOF{
-	Vec3 e_prop;
-	Vec3 e_deriv;
-	Vec3 e_integ;
-	Vec3 feedForward;
-	Vec3 K_p;
-	Vec3 K_i;
-	Vec3 K_d;
-	Vec3 maxInteg;
+	Matrix<float, 3, 1> e_prop;
+	Matrix<float, 3, 1> e_deriv;
+	Matrix<float, 3, 1> e_integ;
+	Matrix<float, 3, 1> feedForward;
+	Matrix<float, 3, 1> K_p;
+	Matrix<float, 3, 1> K_i;
+	Matrix<float, 3, 1> K_d;
+	Matrix<float, 3, 1> maxInteg;
 };
 
 extern pthread_mutex_t PID_Mutex;
@@ -36,13 +36,13 @@ void initializePID(PID_3DOF* PID);
 void resetIntegralErrorPID(PID_3DOF* PID);
 
 //Update Kp, Ki and Kd in the PID
-void updateControlParamPID(PID_3DOF* PID, Vec3 K_p, Vec3 K_i, Vec3 K_d, Vec3 maxInteg);
+void updateControlParamPID(PID_3DOF* PID, Matrix<float, 3, 1> K_p, Matrix<float, 3, 1> K_i, Matrix<float, 3, 1> K_d, Matrix<float, 3, 1> maxInteg);
 
 //Update all errors
-void updateErrorPID(PID_3DOF* PID, Vec3 feedForward, Vec3 e_prop, Vec3 e_deriv, float dt);
+void updateErrorPID(PID_3DOF* PID, Matrix<float, 3, 1> feedForward, Matrix<float, 3, 1> e_prop, Matrix<float, 3, 1> e_deriv, float dt);
 
 //Calculate output of PID
-Vec3 outputPID(PID_3DOF PID);
+Matrix<float, 3, 1> outputPID(PID_3DOF PID);
 
 //Update PID parameters from file
 void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos);

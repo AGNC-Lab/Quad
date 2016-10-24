@@ -23,7 +23,7 @@ file(GLOB SRC_FILES
         quad_threads.cpp
         )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -O3 -Wextra -pthread") 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -O3 -Wextra -Wno-missing-field-initializers -Wno-missing-braces -pthread") 
 
 
 add_definitions(-DPOSIX_ENV)
