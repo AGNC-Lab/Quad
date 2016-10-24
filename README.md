@@ -105,7 +105,7 @@ sudo ufw disable
 * X: Joystick Position Control Mode
 	* ROS topic: /joy
 * Y: Joystick Attitude Mode
-	* ROS topic: /pva
+	* ROS topic: /joy
 
 **The following keyboard keys corresponds to:**
 
