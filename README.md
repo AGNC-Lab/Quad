@@ -145,3 +145,4 @@ shutdown -h now
 - [ ] Improve Position State Estimation
 - [ ] Add feed-forward to controllers
 - [ ] Add yaw reference for position control
+- [ ] Use joystick to switch the yaw source between Vicon/IMU
