@@ -3,9 +3,10 @@ Quadrotor flight software source code for AGNC Lab
 
 ## Compiling
 
-Install Eigen3 and set the path to FindEigen3.cmake to CMAKE_MODULE_PATH by appending the following line SET(CMAKE_MODULE_PATH /path/to FindEigen3.cmake) before find_package(Eigen3 REQUIRED) in CMakeLists.txt.
+- Install Eigen3 (see: http://eigen.tuxfamily.org/index.php?title=Main_Page#Download)
+- Set the path to FindEigen3.cmake to CMAKE_MODULE_PATH by appending the following line SET(CMAKE_MODULE_PATH /path/to FindEigen3.cmake) before find_package(Eigen3 REQUIRED) in CMakeLists.txt.
 
-Install the cross-compiler:
+- Install the cross-compiler:
 
 ```shell
 sudo apt-get install gcc-arm-linux-gnueabi
@@ -13,16 +14,16 @@ sudo apt-get install g++-arm-linux-gnueabi
 sudo apt-get install cmake
 ```
 
-Install the following ROS packages:
-- Go to /catkin_ws/src
-- Run the following lines:
+- Install the following ROS packages:
+    - Go to /catkin_ws/src
+    - Run the following lines:
 ```shell
 git clone https://github.com/ethz-asl/vicon_bridge
 git clone https://github.com/ros-drivers/rosserial 
 git clone https://github.com/ros-drivers/joystick_drivers
 ```
-- Copy the qcontrol_defs folder from this repo into /catkin_ws/src
-- Go to /catkin_ws and run the following line:
+    - Copy the qcontrol_defs folder from this repo into /catkin_ws/src
+    - Go to /catkin_ws and run the following line:
 ```shell
 catkin_make
 ```
