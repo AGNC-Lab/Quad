@@ -95,7 +95,7 @@ void *AttControl_Task(void *threadID){
 		    pthread_mutex_lock(&ThrustJoy_Mutex);
 				localThrust = ThrustJoy;
 			pthread_mutex_unlock(&ThrustJoy_Mutex);
-		    Rdes = RPY2Rot(localAttRef(0), localAttRef(1), localAttRef(2));
+		    Rdes = RPY2Rot(localAttRef(0), localAttRef(1), localAttRef(2)); //fix this
 		}
 		else if (localCurrentState == POSITION_JOY_MODE){
 			pthread_mutex_lock(&attRefPosControl_Mutex);
@@ -117,9 +117,7 @@ void *AttControl_Task(void *threadID){
 		    pthread_mutex_lock(&ThrustJoy_Mutex);
 				localThrust = ThrustJoy;
 			pthread_mutex_unlock(&ThrustJoy_Mutex);
-			inputTorque(0) = 0;
-			inputTorque(1) = 0;
-			inputTorque(2) = 0;
+			inputTorque = Zero_3x1;
 		}
 		else{
 			localThrust = 0;
@@ -188,10 +186,8 @@ void *AttControl_Task(void *threadID){
 
 		//Distribute power to motors
 		pthread_mutex_lock(&Contr_Input_Mutex);
-			Contr_Input(0) = localThrust;
-			Contr_Input(1) = inputTorque(0);
-			Contr_Input(2) = inputTorque(1);
-			Contr_Input(3) = inputTorque(2);
+			Contr_Input << localThrust,
+						   inputTorque;
 			PCA_localData = u2pwmXshape(Contr_Input);
 		pthread_mutex_unlock(&Contr_Input_Mutex);
 
@@ -253,11 +249,9 @@ void *PosControl_Task(void *threadID){
 
 	Matrix<float, 3, 1> z_w;	//z vector of the inertial frame
 	Matrix<float, 3, 1> z_b;	//z vector of the body frame
-	z_w(0) = 0; z_w(1) = 0; z_w(2) = 1;
-
-	//Vectors of zeros
-	Matrix<float, 3, 1> zeros;
-	zeros(0) = 0; zeros(1) = 0; zeros(2) = 0; 
+	z_w << 0,
+		   0,
+		   1;
 
 	//Initialize PIDs (sets initial errors to zero)
 	pthread_mutex_lock(&PID_Mutex);
@@ -315,17 +309,17 @@ void *PosControl_Task(void *threadID){
 	    pthread_mutex_unlock(&attRefJoy_Mutex);
 
 	  	//Calculate position and velocity errors
-	  	e_Pos(0) = localPVA_Ref.pos.position.x - localPVA_quadVicon.pos.position.x;
-	  	e_Pos(1) = localPVA_Ref.pos.position.y - localPVA_quadVicon.pos.position.y;
-	  	e_Pos(2) = localPVA_Ref.pos.position.z - localPVA_quadVicon.pos.position.z;
-	  	e_Vel(0) = localPVA_Ref.vel.linear.x - localPVAEst_quadVicon.vel.linear.x;
-	  	e_Vel(1) = localPVA_Ref.vel.linear.y - localPVAEst_quadVicon.vel.linear.y;
-	  	e_Vel(2) = localPVA_Ref.vel.linear.z - localPVAEst_quadVicon.vel.linear.z;
+	  	e_Pos << localPVA_Ref.pos.position.x - localPVA_quadVicon.pos.position.x,
+	  			 localPVA_Ref.pos.position.y - localPVA_quadVicon.pos.position.y,
+	  			 localPVA_Ref.pos.position.z - localPVA_quadVicon.pos.position.z;
+	  	e_Vel << localPVA_Ref.vel.linear.x - localPVAEst_quadVicon.vel.linear.x,
+	  			 localPVA_Ref.vel.linear.y - localPVAEst_quadVicon.vel.linear.y,
+	  			 localPVA_Ref.vel.linear.z - localPVAEst_quadVicon.vel.linear.z;
 	  	
 	  	//Get feedforward vector
-	  	acc_Ref(0) = localPVA_Ref.acc.linear.x;
-	  	acc_Ref(1) = localPVA_Ref.acc.linear.y;
-	  	acc_Ref(2) = localPVA_Ref.acc.linear.z;
+	  	acc_Ref << localPVA_Ref.acc.linear.x,
+	  			   localPVA_Ref.acc.linear.y,
+	  			   localPVA_Ref.acc.linear.z;
 	  	feedForward = z_w*nominalThrust;
 	  	// feedForward = Add3x1Vec(ScaleMatrix<float, 3, 1>(z_w, nominalThrust), ScaleMatrix<float, 3, 1>(acc_Ref, 1.0/gz));//feedForward = m*gz*z_w + m*ref_dotdot
 
@@ -355,9 +349,9 @@ void *PosControl_Task(void *threadID){
 		z_bdes = normalizeVec3(Fdes);
 		// x_cdes(0) = cos(yawDesired); 
 		// x_cdes(1) = sin(yawDesired); 
-		x_cdes(0) = 1; 
-		x_cdes(1) = 0; 
-		x_cdes(2) = 0;
+		x_cdes << 1, 
+				  0, 
+				  0;
 		y_bdes = normalizeVec3(z_bdes.cross(x_cdes));
 		x_bdes = y_bdes.cross(z_bdes);
 
