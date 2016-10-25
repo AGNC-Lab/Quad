@@ -45,9 +45,9 @@ void *AttControl_Task(void *threadID){
 	Matrix<float, 3, 1> localAttRef;
 
 	//Vectors of zeros
-	Matrix<float, 3, 1> zeros;
-	zeros(0) = 0; zeros(1) = 0; zeros(2) = 0; 
-	Matrix<float, 3, 1> feedforward = zeros;
+	Matrix<float, 3, 1> Zero_3x1 = Matrix<float, 3, 1>::Zero(3, 1);
+	Matrix<float, 3, 3> Zero_3x3 = Matrix<float, 3, 3>::Zero(3, 3);
+	Matrix<float, 3, 1> feedforward = Zero_3x1;
 
 	Matrix<float, 4, 1> IMU_localData_Quat;
 	Matrix<float, 3, 1> IMU_localData_Vel;
@@ -63,7 +63,7 @@ void *AttControl_Task(void *threadID){
 	Matrix<float, 3, 1> error_att_vel;
 
 	Matrix<float, 3, 1> wDes;
-	Matrix<float, 3, 3> Rdes;
+	Matrix<float, 3, 3> Rdes = Zero_3x3;
 	Matrix<float, 3, 3> Rbw;
 	
 
