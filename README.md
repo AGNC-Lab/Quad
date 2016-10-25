@@ -15,6 +15,7 @@ cmake .
 make clean
 make
 ```
+If the build is successful, the executable data.out will be generated.
 
 If there is an error with any of the above, delete the Quad/multithreaded/CMakeCache.txt file and try again from cmake . step.
 
