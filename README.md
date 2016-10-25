@@ -3,15 +3,19 @@ Quadrotor flight software source code for AGNC Lab
 
 ## Compiling
 
-- Install Eigen3 (see: http://eigen.tuxfamily.org/index.php?title=Main_Page#Download)
-- Set the path to FindEigen3.cmake to CMAKE_MODULE_PATH by appending the following line SET(CMAKE_MODULE_PATH /path/to FindEigen3.cmake) before find_package(Eigen3 REQUIRED) in CMakeLists.txt.
-
 - Install the cross-compiler:
 
 ```shell
 sudo apt-get update
 sudo apt-get install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi libeigen3-dev cmake
+git clone https://github.com/AGNC-Lab/Quad.git
+cd Quad/multithreaded
+cmake .
+make clean
+make
 ```
+
+If there is an error with any of the above, delete the Quad/multithreaded/CMakeCache.txt file and try again from cmake . step.
 
 - Install the following ROS packages:
     - Go to /catkin_ws/src
@@ -39,14 +43,6 @@ export ROS_MASTER_URI=http://192.168.1.XX:11311
 export ROS_IP=192.168.1.XX
 ```
 where 'XX' is your own IP.
-
-In order to compile the code from this repository, clone the Repo, go to the /multithreaded folder and run:
-
-```shell
-cmake .
-make
-```
-If there is an error with any of the above, erase the CMakeCache.txt file and try again.
 
 ## Preparing the quadrotor
 
@@ -138,8 +134,8 @@ shutdown -h now
 
 ## To-do list
 
-- [ ] Complete documentation of joystick and keyboard commands.
-- [ ] Use Eigen3 to represent all vectors and matrices.
+- [x] Complete documentation of joystick and keyboard commands.
+- [x] Use Eigen3 to represent all vectors and matrices.
 - [ ] Implement FSM transitions.
 - [ ] Transition to safe-mode if the onboard software or communication terminated unexpectedly.
 - [ ] Improve Position State Estimation
