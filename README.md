@@ -1,9 +1,10 @@
-# Quadrotor Flight Software [![Build Status](https://travis-ci.org/AGNC-Lab/Quad.svg?branch=master)](https://travis-ci.org/AGNC-Lab/Quad)
+[![Build Status](https://travis-ci.org/AGNC-Lab/Quad.svg?branch=master)](https://travis-ci.org/AGNC-Lab/Quad)
+# Quadcopter Flight Software \
 Quadrotor flight software source code for AGNC Lab
 
 ## Compiling
 
-- Install the cross-compiler:
+- Run the following commands to install the cross-compiler, dependencies and build:
 
 ```shell
 sudo apt-get update
@@ -44,7 +45,7 @@ export ROS_IP=192.168.1.XX
 ```
 where 'XX' is your own IP.
 
-## Preparing the quadrotor
+## Preparing the quadcopter
 
 * Power it up
 * Connect to it:
@@ -57,7 +58,7 @@ root@192.168.1.202\'s password: **
 
 ## Moving files into the quadcopter using Nautilus
 
-You can always send data into the quadcopter using the terminal, but it might be a little bit tedious. Alternatively, we can use sshfs, which allows you to transfer files to the quad using the file explorer (Nautilus). This can be accomphished by creating a folder on your computer that will host the quadcopter files. We usually name these folders as "gumxx", where xx is the number of the quad. Then, you can see the files inside the quad by typing the following in a terminal:
+You can always send data into the quadcopter using the terminal, but it might be a little bit tedious. Alternatively, we can use sshfs, which allows you to transfer files to the quad using the file explorer (Nautilus). This can be accomplished by creating a folder on your computer that will host the quadcopter files. We usually name these folders as "gumxx", where xx is the number of the quad. Then, you can see the files inside the quad by typing the following in a terminal:
 ```shell
 sshfs root@192.168.1.2xx:/ DIRECTORY_TO_gumxx
 ```
@@ -69,17 +70,17 @@ sshfs root@192.168.1.2xx:/ ~/gum02
 ## Pre-flight routine
 
 * Plug in the joystick to the PC
-* Start vicon system in the Vicon computer. If you don't know how to do it, ask anyone around.
+* Start Vicon system in the Vicon computer. If you don't know how to do it, ask anyone around.
 * Copy the file 'vicon.launch' from Quad/ros/vicon_bridge into the folder /catkin_ws/src/vicon_bridge/launch
-* Run ros stuff: 
+* Run ROS nodes: 
 ```shell
 roslaunch vicon_bridge vicon.launch
 ```
-* make sure vicon data is being broadcasted to the correct topic. You should see data from the quad if you run:
+* make sure Vicon data is being broadcast to the correct topic. You should see data from the quad if you run:
 ```shell
 rostopic echo /vicon/Quad1/Quad1
 ```
-Observation: You don't need to see vicon data if you don't need to fly in position control mode. Still, you have to run the previous vicon.launch file.
+Observation: You don't need to see Vicon data if you don't need to fly in position control mode. Still, you have to run the previous icon.launch file.
 * run the flight software in the terminal where you are ssh's into the quad:
 
 ```shell
@@ -90,7 +91,7 @@ where 'XX' is the IP of the machine running ROS. If the quadcopter cannot connec
 sudo ufw disable
 ```
 
-## Flying the quadrotor
+## Flying the quadcopter
 
 **The following joystick buttons corresponds to:**
 
@@ -113,12 +114,12 @@ sudo ufw disable
 * 2: Print Quaternion from IMU
 * 3: Print Position, velocity and acceleration estimate from Kalman filter
 * 4: Print Control input
-* 5: Print Angular Veloctiy estimate from IMU
-* 6: Print Roll, pitch and yaw referece from joystick
+* 5: Print Angular Velocity estimate from IMU
+* 6: Print Roll, pitch and yaw reference from joystick
 * 7: Position and velocity estimate from Vicon
 * 8: Integral term for the attitude PID controller
 * 9: Motor speed/Thrust
-* 0: Update controller parameters (loads all the Config files and store contents in the PIDs)
+* 0: Update controller parameters (loads all the Configuration files and store contents in the PIDs)
 * ESC: Software graceful exit (Avoid ctrl+C at all costs)
 
 The quadcopter can take either yaw data from IMU or Vicon. It can only go to position control mode with Vicon Yaw data. in order to switch Yaw source, type 'v'.
@@ -126,7 +127,7 @@ The quadcopter can take either yaw data from IMU or Vicon. It can only go to pos
 ## Stopping flight software and turning Quadcopter off:
 
 * If the flight software is running and you want it to stop, push ESC (do not Ctrl+C unless strictly necessary!).
-* In order to turn que quad off, type (in the ssh'd terminal):
+* In order to turn the quad off, type (in the ssh'd terminal):
 ```shell
 shutdown -h now
 ```
@@ -137,7 +138,7 @@ shutdown -h now
 - [x] Complete documentation of joystick and keyboard commands.
 - [x] Use Eigen3 to represent all vectors and matrices.
 - [ ] Implement FSM transitions.
-- [ ] Transition to safe-mode if the onboard software or communication terminated unexpectedly.
+- [ ] Transition to safe-mode if the on-board software or communication terminated unexpectedly.
 - [ ] Improve Position State Estimation
 - [ ] Add feed-forward to controllers
 - [ ] Add yaw reference for position control
