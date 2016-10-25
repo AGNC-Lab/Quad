@@ -7,3 +7,5 @@ script:
 - cmake .
 - make clean
 - make
+
+language: cpp
