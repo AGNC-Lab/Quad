@@ -1,4 +1,4 @@
-# Quadrotor Flight Software
+# Quadrotor Flight Software [![Build Status](https://travis-ci.org/AGNC-Lab/Quad.svg?branch=master)](https://travis-ci.org/AGNC-Lab/Quad)
 Quadrotor flight software source code for AGNC Lab
 
 ## Compiling
