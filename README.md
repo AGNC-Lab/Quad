@@ -9,9 +9,8 @@ Quadrotor flight software source code for AGNC Lab
 - Install the cross-compiler:
 
 ```shell
-sudo apt-get install gcc-arm-linux-gnueabi
-sudo apt-get install g++-arm-linux-gnueabi
-sudo apt-get install cmake
+sudo apt-get update
+sudo apt-get install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi libeigen3-dev cmake
 ```
 
 - Install the following ROS packages:
