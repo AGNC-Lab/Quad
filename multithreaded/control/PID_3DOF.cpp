@@ -71,9 +71,10 @@ vector<string> split(const string &s, char delim) {
 }
 
 void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos) {
-	Matrix<float, 3, 1> KP_RPY, KD_RPY, KI_RPY, maxInteg_RPY;
-	Matrix<float, 3, 1> KP_w, KD_w, KI_w, maxInteg_w;
-	Matrix<float, 3, 1> KP_Pos, KD_Pos, KI_Pos, maxInteg_Pos;
+	Matrix<float, 3, 1> Zero_3x1 = Matrix<float, 3, 1>::Zero(3, 1);
+	Matrix<float, 3, 1> KP_RPY = Zero_3x1, KD_RPY = Zero_3x1, KI_RPY = Zero_3x1, maxInteg_RPY = Zero_3x1;
+	Matrix<float, 3, 1> KP_w = Zero_3x1, KD_w = Zero_3x1, KI_w = Zero_3x1, maxInteg_w = Zero_3x1;
+	Matrix<float, 3, 1> KP_Pos = Zero_3x1, KD_Pos = Zero_3x1, KI_Pos = Zero_3x1, maxInteg_Pos = Zero_3x1;
 
     string line;
     vector<string> line_vec;
