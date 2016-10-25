@@ -143,3 +143,4 @@ shutdown -h now
 - [ ] Add feed-forward to controllers
 - [ ] Add yaw reference for position control
 - [ ] Use joystick to switch the yaw source between Vicon/IMU
+- [ ] Modify function calls/args to passing by reference.
