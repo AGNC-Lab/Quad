@@ -8,4 +8,5 @@ script:
 - make clean
 - make
 
-language: cpp
+language:
+- cpp
