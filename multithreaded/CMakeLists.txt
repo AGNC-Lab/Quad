@@ -1,12 +1,10 @@
 cmake_minimum_required (VERSION 2.6)
 project(nikipilot)
-find_package(Eigen3 REQUIRED)
 SET(CMAKE_C_COMPILER /usr/bin/arm-linux-gnueabi-gcc)
 SET(CMAKE_CXX_COMPILER /usr/bin/arm-linux-gnueabi-g++) 
 
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}
-	${EIGEN3_INCLUDE_DIR}
 	rosserial
         
         
@@ -23,7 +21,7 @@ file(GLOB SRC_FILES
         quad_threads.cpp
         )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -O3 -Wextra -Wno-missing-field-initializers -Wno-missing-braces -pthread") 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -O3 -Wextra -I/usr/include/eigen3 -Wno-missing-field-initializers -Wno-missing-braces -pthread") 
 
 
 add_definitions(-DPOSIX_ENV)
