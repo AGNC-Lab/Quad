@@ -1,0 +1,9 @@
+before_install:
+- sudo apt-get update -qq
+- sudo apt-get install -qq gcc-arm-linux-gnueabi g++-arm-linux-gnueabi libeigen3-dev
+
+script:
+- cd multithreaded
+- cmake .
+- make clean
+- make
