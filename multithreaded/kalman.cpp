@@ -29,9 +29,8 @@ Matrix<float, 3, 1> v;
 Matrix<float, 3, 1> a;
 Matrix<float, 3, 1> bAcc;
 Matrix<float, 12, 1> result;
-Matrix<float, 12, 6> G;
-Matrix<float, 12, 6> G1;
-Matrix<float, 6, 6> G2;
+Matrix<float, 12, 6> Gammak;
+Matrix<float, 6, 6> Qk;
 Matrix<float, 12, 12> I_12x12;
 Matrix<float, 3, 3> I_3x3;
 Matrix<float, 3, 3> Zero_3x3;
@@ -42,29 +41,28 @@ void kalman_init()
 
 	dt = 0.010;             // 100 Hz
   sigma_J = 20;           // Jerk process noise
-  sigma_bAcc = 0.1;        // Accelerometer bias process noise
+  sigma_bAcc = 0.01;      // Accelerometer bias process noise
 	vicon_R = 0.0001;       // estimated vicon standard deviation
-  accelerometer_R = 3; // estimated accelerometer standard deviation
+  accelerometer_R = 0.5; // estimated accelerometer standard deviation
   I_12x12 = Matrix<float, 12, 12>::Identity();
   I_3x3 = Matrix<float, 3, 3>::Identity();
   Zero_3x3 = Matrix<float, 3, 3>::Zero(3, 3);
   
-  G1 << I_3x3 * (pow(dt, 3)/6), Zero_3x3,
-        I_3x3 * (pow(dt, 2)/2), Zero_3x3,
-                    I_3x3 * dt, Zero_3x3,
-                      Zero_3x3, I_3x3*dt;
-  G2 << pow(sigma_J, 2)*I_3x3,                 Zero_3x3, 
-                     Zero_3x3, pow(sigma_bAcc, 2)*I_3x3;
-  G = G1*G2;
+  Gammak << I_3x3 * (pow(dt, 3)/6), Zero_3x3,
+            I_3x3 * (pow(dt, 2)/2), Zero_3x3,
+                        I_3x3 * dt, Zero_3x3,
+                          Zero_3x3, I_3x3*dt;
+  Qk << pow(sigma_J, 2)*I_3x3,                 Zero_3x3, 
+                     Zero_3x3, pow(sigma_bAcc, 2)*I_3x3; //Process noise covariance matrix
+  Q = Gammak*Qk*Gammak.transpose();
 
-	Q = (G * G.transpose());                 // process noise covariance matrix
 	R_vicon = pow(vicon_R, 2) * I_3x3;       // Vicon measurement covariance matrix
   R_acc = pow(accelerometer_R, 2) * I_3x3; // Accelerometer measurement covariance matrix
 
   A << I_3x3,    dt*I_3x3, (pow(dt,2)/2)*I_3x3, Zero_3x3,
        Zero_3x3,    I_3x3,            dt*I_3x3, Zero_3x3,
        Zero_3x3, Zero_3x3,               I_3x3, Zero_3x3,
-       Zero_3x3, Zero_3x3,            Zero_3x3, dt*I_3x3;
+       Zero_3x3, Zero_3x3,            Zero_3x3, I_3x3;
 
   //Initial estimate: zeros
   x_est = Matrix<float, 12, 1>::Zero();

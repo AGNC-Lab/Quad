@@ -1,29 +1,29 @@
-KP_R = .55
-KP_P = .55
+KP_R = .65
+KP_P = .65
 KP_Y = .5
 
 KD_R = 0.0
 KD_P = 0.0
 KD_Y = 0
 
-KI_R = 0.3
-KI_P = 0.3
+KI_R = 0.2
+KI_P = 0.2
 KI_Y = .5
 
 maxInteg_R = 5.0
 maxInteg_P = 5.0
 maxInteg_Y = 5.0
 
-KP_wx = 0.9
-KP_wy = 0.9
+KP_wx = 1.1
+KP_wy = 1.1
 KP_wz = .5
 
 KD_wx = 0
 KD_wy = 0
 KD_wz = 0
 
-KI_wx = 0.6
-KI_wy = 0.6
+KI_wx = 0.4
+KI_wy = 0.4
 KI_wz = 0.3
 
 

@@ -238,7 +238,7 @@ void *PosControl_Timer(void *threadID){
 void *PosControl_Task(void *threadID){
 	printf("PosControl_Task has started!\n");
 
-	float dt = 0.050; 			//Sampling time
+	float dt = 0.020; 			//Sampling time
 	double m = 0.26, g_z = 9.81;  //Mass and gravity for quadcopter
 	double nominalThrust = 0.8;
 	int localCurrentState;

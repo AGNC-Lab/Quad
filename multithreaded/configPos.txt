@@ -6,8 +6,8 @@ KD_X = 0.25
 KD_Y = 0.25
 KD_Z = 0.3
 
-KI_X = .02
-KI_Y = .02
+KI_X = .025
+KI_Y = .025
 KI_Z = .1
 
 maxInteg_X = 1.0

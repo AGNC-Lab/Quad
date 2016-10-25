@@ -25,6 +25,7 @@
 #include "threads/mpu_thread.h"
 #include "threads/stateMachine.h"
 #include "threads/Ros_threads.h"
+#include "threads/logger_thread.h"
 // #include "overo/overo.h"
 
 #include "kalman.h"
@@ -57,7 +58,9 @@ neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForE
 neosmart_event_t e_SwitchYawSource;
 neosmart_event_t e_IMU_trigger;
 neosmart_event_t e_PCA_trigger;
+neosmart_event_t e_Log_trigger;
 neosmart_event_t e_AttControl_trigger, e_PosControl_trigger;
+neosmart_event_t e_Kalman_Trigger;
 neosmart_event_t e_endInit; //Event that indicates that initialization is done
 pthread_mutex_t IMU_Mutex;	//protect IMU data
 pthread_mutex_t PCA_Mutex;
@@ -269,8 +272,38 @@ void *rosPublisherTask(void *threadID){
 //   mc_overo.gpio_set_direction(overo::GPIO_147,overo::IN);
 // } 
 
-void *Kalman_Task(void *threadID){
+void *Kalman_Timer(void *threadID){
+	printf("Kalman_Timer has started!\n");
 	int SamplingTime = 10;	//Sampling time in milliseconds
+	int localCurrentState;
+
+	//setup();
+
+	while(1){
+		WaitForEvent(e_Timeout,SamplingTime);
+
+		//Check system state
+		pthread_mutex_lock(&stateMachine_Mutex);
+		localCurrentState = currentState;
+		pthread_mutex_unlock(&stateMachine_Mutex);
+
+		//check if system should be terminated
+		if(localCurrentState == TERMINATE){
+			break;
+		}
+
+		SetEvent(e_Kalman_Trigger);
+
+	}
+	
+	printf("Kalman_Timer stopping...\n");
+	threadCount -= 1;
+	pthread_exit(NULL);
+}
+
+
+void *Kalman_Task(void *threadID){
+	// int SamplingTime = 5;	//Sampling time in milliseconds
 	int localCurrentState;
 	Vec3 Zeros;
 	Zeros.v[0] = 0; Zeros.v[1] = 0; Zeros.v[2] = 0;
@@ -290,7 +323,7 @@ void *Kalman_Task(void *threadID){
 
   	while(1){
 
-		WaitForEvent(e_Timeout,SamplingTime);
+		WaitForEvent(e_Kalman_Trigger,500);
 
 		pthread_mutex_lock(&stateMachine_Mutex);
 			localCurrentState = currentState;
@@ -331,9 +364,11 @@ void *Kalman_Task(void *threadID){
 		if (prev_IMU_localData_Accel != IMU_localData_Accel)
 		{
 			//Get vehicle orientation
-			pthread_mutex_lock(&PVA_Vicon_Mutex);
-				IMU_localData_Quat = IMU_Data_Quat_ViconYaw;
-			pthread_mutex_unlock(&PVA_Vicon_Mutex);
+			IMU_localData_Quat.v[0] = localPVA_quadVicon.pos.orientation.w;
+			IMU_localData_Quat.v[1] = localPVA_quadVicon.pos.orientation.x;
+			IMU_localData_Quat.v[2] = localPVA_quadVicon.pos.orientation.y;
+			IMU_localData_Quat.v[3] = localPVA_quadVicon.pos.orientation.z;
+			
 			Rbw = Quat2rot(IMU_localData_Quat);
 
 			//Rotate acceleration into inertial frame
@@ -391,6 +426,9 @@ int main(int argc, char *argv[])
 	pthread_t rosSpinThread;
 	pthread_t rosPublisherThread;
 	pthread_t Kalman_Thread;
+	pthread_t Kalman_TimerThread;
+	pthread_t LoggerTrigger;
+	pthread_t LoggerThread;
 	//long IDthreadKeyboard, IDthreadIMU, IDthreadMAG; //Stores ID for threads
 	int ReturnCode;
 
@@ -458,6 +496,8 @@ int main(int argc, char *argv[])
 	e_PCA_trigger = CreateEvent(false,false); 	//auto-reset event
 	e_AttControl_trigger = CreateEvent(false, false);  //auto-reset event
 	e_PosControl_trigger = CreateEvent(false, false);  //auto-reset event
+	e_Log_trigger = CreateEvent(false,false);
+	e_Kalman_Trigger = CreateEvent(false,false);
 
 	//Create mutexes
 	pthread_mutex_init(&IMU_Mutex, NULL);
@@ -592,6 +632,14 @@ int main(int argc, char *argv[])
 	else
 		threadCount += 1;
 
+	//Start kalman filter timer task
+	if (ReturnCode = pthread_create(&Kalman_TimerThread, NULL, Kalman_Timer, NULL)){
+		printf("Start Kalman_TimerThread failed; return code from pthread_create() is %d\n", ReturnCode);
+		exit(-1);
+	}
+	else
+		threadCount += 1;
+
 	//Start kalman filter task
 	if (ReturnCode = pthread_create(&Kalman_Thread, NULL, Kalman_Task, NULL)){
 		printf("Start PrintThread failed; return code from pthread_create() is %d\n", ReturnCode);
@@ -599,6 +647,22 @@ int main(int argc, char *argv[])
 	}
 	else
 		threadCount += 1;
+
+	// //Start logger timer task
+	// if (ReturnCode = pthread_create(&LoggerTrigger, NULL, Logger_Timer, NULL)){
+	// 	printf("Start LoggerTrigger failed; return code from pthread_create() is %d\n", ReturnCode);
+	// 	exit(-1);
+	// }
+	// else
+	// 	threadCount += 1;
+
+	// //Start logger task
+	// if (ReturnCode = pthread_create(&LoggerThread, NULL, Log_Task, NULL)){
+	// 	printf("Start LoggerThread failed; return code from pthread_create() is %d\n", ReturnCode);
+	// 	exit(-1);
+	// }
+	// else
+	// 	threadCount += 1;
 
 	//This has to be removed from here and put somewhere that indicates configurating the vechicle has been done
 	SetEvent(e_endInit);
@@ -627,8 +691,6 @@ int main(int argc, char *argv[])
 	DestroyEvent(e_buttonY);
 	DestroyEvent(e_buttonA);
 	DestroyEvent(e_buttonB);
-	// DestroyEvent(e_ButtonLB);
-	// DestroyEvent(e_ButtonRB);
 	DestroyEvent(e_Motor_Up);
 	DestroyEvent(e_Motor_Down);
 	DestroyEvent(e_Motor_Kill);
@@ -639,6 +701,8 @@ int main(int argc, char *argv[])
 	DestroyEvent(e_PosControl_trigger);
 	DestroyEvent(e_endInit);
 	DestroyEvent(e_SwitchYawSource);
+	DestroyEvent(e_Log_trigger);
+	DestroyEvent(e_Kalman_Trigger);
 
 	//Destroy mutexes
 	pthread_mutex_destroy(&IMU_Mutex);
