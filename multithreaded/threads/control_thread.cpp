@@ -161,7 +161,7 @@ void *AttControl_Task(void *threadID){
 			//Update PID
 			pthread_mutex_lock(&PID_Mutex);
 				if(!isNanVec3(error_att)){
-					updateErrorPID(&PID_att, feedforward, error_att, zeros, dt);
+					updateErrorPID(&PID_att, feedforward, error_att, Zero_3x1, dt);
 				}
 
 				//Dont integrate integrator if not in minimum thrust
@@ -174,7 +174,7 @@ void *AttControl_Task(void *threadID){
 
 				//Calculate angular velocity error and update PID
 				error_att_vel = wDes-IMU_localData_Vel;
-				updateErrorPID(&PID_angVel, feedforward, error_att_vel, zeros, dt);
+				updateErrorPID(&PID_angVel, feedforward, error_att_vel, Zero_3x1, dt);
 
 				if (localThrust < takeOffThrust){
 					resetIntegralErrorPID(&PID_angVel);
