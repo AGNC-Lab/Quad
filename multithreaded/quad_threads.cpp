@@ -276,7 +276,6 @@ void *Kalman_Timer(void *threadID){
 	printf("Kalman_Timer has started!\n");
 	int SamplingTime = 10;	//Sampling time in milliseconds
 	int localCurrentState;
-<<<<<<< HEAD
 
 	//setup();
 
@@ -306,11 +305,8 @@ void *Kalman_Timer(void *threadID){
 void *Kalman_Task(void *threadID){
 	// int SamplingTime = 5;	//Sampling time in milliseconds
 	int localCurrentState;
-	Vec3 Zeros;
-	Zeros.v[0] = 0; Zeros.v[1] = 0; Zeros.v[2] = 0;
-=======
+
 	Matrix<float, 3, 1> Zeros = Matrix<float, 3, 1>::Zero();
->>>>>>> 0ec09ab8bc45b030df1d12c04ba128b045341854
 
 	ros::Time current_time = ros::Time(0,0);
 	ros::Time prev_time = ros::Time(0,0);
@@ -368,10 +364,10 @@ void *Kalman_Task(void *threadID){
 		if (prev_IMU_localData_Accel != IMU_localData_Accel)
 		{
 			//Get vehicle orientation
-			IMU_localData_Quat.v[0] = localPVA_quadVicon.pos.orientation.w;
-			IMU_localData_Quat.v[1] = localPVA_quadVicon.pos.orientation.x;
-			IMU_localData_Quat.v[2] = localPVA_quadVicon.pos.orientation.y;
-			IMU_localData_Quat.v[3] = localPVA_quadVicon.pos.orientation.z;
+			IMU_localData_Quat(0) = localPVA_quadVicon.pos.orientation.w;
+			IMU_localData_Quat(1) = localPVA_quadVicon.pos.orientation.x;
+			IMU_localData_Quat(2) = localPVA_quadVicon.pos.orientation.y;
+			IMU_localData_Quat(3) = localPVA_quadVicon.pos.orientation.z;
 			
 			Rbw = Quat2rot(IMU_localData_Quat);
 

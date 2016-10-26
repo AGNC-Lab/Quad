@@ -32,10 +32,10 @@ void *Logger_Timer(void *threadID){
 void *Log_Task(void *threadID){
 	printf("Log_Task has started!\n");
 
-	Vec3 IMU_localData_RPY;
-	Vec3 IMU_localData_Accel;
-	Vec4 IMU_localData_Quat;
-	Vec3 IMU_localData_AngVel;
+	Matrix<float, 3, 1> IMU_localData_RPY;
+	Matrix<float, 3, 1> IMU_localData_Accel;
+	Matrix<float, 4, 1> IMU_localData_Quat;
+	Matrix<float, 3, 1> IMU_localData_AngVel;
 	qcontrol_defs::PVA localPVA_quadVicon;
 	int SamplingTime = 5;
 	long k = 0;
@@ -71,10 +71,10 @@ void *Log_Task(void *threadID){
 
 		//ofs << localPVA_quadVicon.t.sec+localPVA_quadVicon.t.nsec*pow(10,-9) << ", ";
   		ofs << double(k*SamplingTime)/1000.0 << ", ";
-		ofs << IMU_localData_RPY.v[0] << ", " << IMU_localData_RPY.v[1] << ", " << IMU_localData_RPY.v[2] << ", ";
-		ofs << IMU_localData_Accel.v[0] << ", " << IMU_localData_Accel.v[1] << ", " << IMU_localData_Accel.v[2] << ", ";
-		ofs << IMU_localData_AngVel.v[0] << ", " << IMU_localData_AngVel.v[1] << ", " << IMU_localData_AngVel.v[2] << ", ";
-		ofs << IMU_localData_Quat.v[0] << ", " << IMU_localData_Quat.v[1] << ", " << IMU_localData_Quat.v[2] << ", " << IMU_localData_Quat.v[3] << ", ";
+		ofs << IMU_localData_RPY(0) << ", " << IMU_localData_RPY(1) << ", " << IMU_localData_RPY(2) << ", ";
+		ofs << IMU_localData_Accel(0) << ", " << IMU_localData_Accel(1) << ", " << IMU_localData_Accel(2) << ", ";
+		ofs << IMU_localData_AngVel(0) << ", " << IMU_localData_AngVel(1) << ", " << IMU_localData_AngVel(2) << ", ";
+		ofs << IMU_localData_Quat(0) << ", " << IMU_localData_Quat(1) << ", " << IMU_localData_Quat(2) << ", " << IMU_localData_Quat(3) << ", ";
 		ofs << localPVA_quadVicon.pos.position.x << ", " << localPVA_quadVicon.pos.position.y << ", " << localPVA_quadVicon.pos.position.z << ", ";
 		ofs << localPVA_quadVicon.pos.orientation.w << ", " << localPVA_quadVicon.pos.orientation.x << ", " << localPVA_quadVicon.pos.orientation.y << ", " << localPVA_quadVicon.pos.orientation.z << endl;
 

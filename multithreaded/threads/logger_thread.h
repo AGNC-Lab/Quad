@@ -20,10 +20,10 @@ extern pthread_mutex_t stateMachine_Mutex;
 extern pthread_mutex_t IMU_Mutex;	//protect IMU data
 extern pthread_mutex_t PVA_Vicon_Mutex;
 
-extern Vec3 IMU_Data_RPY;
-extern Vec4 IMU_Data_Quat;
-extern Vec3 IMU_Data_Accel;
-extern Vec3 IMU_Data_AngVel;
+extern Matrix<float, 3, 1> IMU_Data_RPY;
+extern Matrix<float, 4, 1> IMU_Data_Quat;
+extern Matrix<float, 3, 1> IMU_Data_Accel;
+extern Matrix<float, 3, 1> IMU_Data_AngVel;
 
 extern neosmart_event_t e_Log_trigger;
 extern neosmart_event_t e_Timeout;
