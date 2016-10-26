@@ -1,6 +1,6 @@
 #include <iostream>
-#include <Eigen/Dense>
 #include <math.h>
+#include <Eigen/Dense>
 using Eigen::Matrix;
 
 float dt;

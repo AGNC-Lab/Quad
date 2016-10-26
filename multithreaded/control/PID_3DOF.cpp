@@ -1,13 +1,11 @@
 
 
 #include "PID_3DOF.h"
-
+#include <Eigen/Dense>
+using Eigen::Matrix;
 //Sets initial errors to zero
 void initializePID(PID_3DOF* PID){
-	Vec3 zeros;
-	zeros.v[0] = 0; 
-	zeros.v[1] = 0; 
-	zeros.v[2] = 0;
+	Matrix<float, 3, 1> zeros = Matrix<float, 3, 1>::Zero(3, 1);
 
 	PID->e_prop = zeros;
 	PID->e_deriv = zeros;
@@ -16,13 +14,11 @@ void initializePID(PID_3DOF* PID){
 
 //Sets integral error to zero
 void resetIntegralErrorPID(PID_3DOF* PID){
-	PID->e_integ.v[0] = 0;
-	PID->e_integ.v[1] = 0;
-	PID->e_integ.v[2] = 0;
+	PID->e_integ = Matrix<float, 3, 1>::Zero(3, 1);
 }
 
 //Update Kp, Ki and Kd in the PID
-void updateControlParamPID(PID_3DOF* PID, Vec3 K_p, Vec3 K_i, Vec3 K_d, Vec3 maxInteg){
+void updateControlParamPID(PID_3DOF* PID, Matrix<float, 3, 1> K_p, Matrix<float, 3, 1> K_i, Matrix<float, 3, 1> K_d, Matrix<float, 3, 1> maxInteg){
 	PID->K_p = K_p;
 	PID->K_d = K_d;
 	PID->K_i = K_i;
@@ -30,35 +26,31 @@ void updateControlParamPID(PID_3DOF* PID, Vec3 K_p, Vec3 K_i, Vec3 K_d, Vec3 max
 }
 
 //Update all errors
-void updateErrorPID(PID_3DOF* PID, Vec3 feedForward, Vec3 e_prop, Vec3 e_deriv, float dt){
+void updateErrorPID(PID_3DOF* PID, Matrix<float, 3, 1> feedForward, Matrix<float, 3, 1> e_prop, Matrix<float, 3, 1> e_deriv, float dt){
 
 	PID->feedForward = feedForward;
 	PID->e_prop = e_prop;
 	PID->e_deriv = e_deriv;
-	PID->e_integ = Add3x1Vec(PID->e_integ, ScaleVec3(e_prop, dt)); //e_integ = e_integ + e_prop*dt
+	PID->e_integ = PID->e_integ+(e_prop*dt); //e_integ = e_integ + e_prop*dt
 
 	//Saturate integral error
 	for (int i = 0; i < 3; i++){
-		if (PID->e_integ.v[i] > PID->maxInteg.v[i]){
-			PID->e_integ.v[i] = PID->maxInteg.v[i];
+		if (PID->e_integ(i) > PID->maxInteg(i)){
+			PID->e_integ(i) = PID->maxInteg(i);
 		}
-		else if (PID->e_integ.v[i] < -PID->maxInteg.v[i]){
-			PID->e_integ.v[i] = -PID->maxInteg.v[i];
+		else if (PID->e_integ(i) < -PID->maxInteg(i)){
+			PID->e_integ(i) = -PID->maxInteg(i);
 		}
 	}
 }
 
 //Calculate output of PID
-Vec3 outputPID(PID_3DOF PID){
-	Vec3 PID_out;
-	for (int i = 0; i < 3; i++)
-	{
-		PID_out.v[i] =  PID.feedForward.v[i] + 
-						PID.e_prop.v[i] * PID.K_p.v[i] + 
-						PID.e_deriv.v[i] * PID.K_d.v[i] + 
-						PID.e_integ.v[i] * PID.K_i.v[i];
-	}
-
+Matrix<float, 3, 1> outputPID(PID_3DOF PID){
+	Matrix<float, 3, 1> PID_out;
+	PID_out =  PID.feedForward + 
+				PID.e_prop.cwiseProduct(PID.K_p) + 
+				PID.e_deriv.cwiseProduct(PID.K_d) + 
+				PID.e_integ.cwiseProduct(PID.K_i);		
 	return PID_out;
 }
 
@@ -79,9 +71,10 @@ vector<string> split(const string &s, char delim) {
 }
 
 void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos) {
-	Vec3 KP_RPY, KD_RPY, KI_RPY, maxInteg_RPY;
-	Vec3 KP_w, KD_w, KI_w, maxInteg_w;
-	Vec3 KP_Pos, KD_Pos, KI_Pos, maxInteg_Pos;
+	Matrix<float, 3, 1> Zero_3x1 = Matrix<float, 3, 1>::Zero(3, 1);
+	Matrix<float, 3, 1> KP_RPY = Zero_3x1, KD_RPY = Zero_3x1, KI_RPY = Zero_3x1, maxInteg_RPY = Zero_3x1;
+	Matrix<float, 3, 1> KP_w = Zero_3x1, KD_w = Zero_3x1, KI_w = Zero_3x1, maxInteg_w = Zero_3x1;
+	Matrix<float, 3, 1> KP_Pos = Zero_3x1, KD_Pos = Zero_3x1, KI_Pos = Zero_3x1, maxInteg_Pos = Zero_3x1;
 
     string line;
     vector<string> line_vec;
@@ -92,76 +85,76 @@ void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos) {
 		while (getline (myfile ,line)) {
 		    line_vec = split(line, ' ');
 		    if (line_vec[0] == "KP_R") {
-	            KP_RPY.v[0] = atof(line_vec[2].c_str());
+	            KP_RPY(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KP_P") {
-				KP_RPY.v[1] = atof(line_vec[2].c_str());
+				KP_RPY(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KP_Y") {
-				KP_RPY.v[2] = atof(line_vec[2].c_str());
+				KP_RPY(2) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KD_R") {
-	            	KD_RPY.v[0] = atof(line_vec[2].c_str());
+	            	KD_RPY(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KD_P") {
-				KD_RPY.v[1] = atof(line_vec[2].c_str());
+				KD_RPY(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KD_Y") {
-				KD_RPY.v[2] = atof(line_vec[2].c_str());
+				KD_RPY(2) = atof(line_vec[2].c_str());
 		    }
 		    if (line_vec[0] == "KI_R") {
-	            KI_RPY.v[0] = atof(line_vec[2].c_str());
+	            KI_RPY(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KI_P") {
-				KI_RPY.v[1] = atof(line_vec[2].c_str());
+				KI_RPY(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KI_Y") {
-				KI_RPY.v[2] = atof(line_vec[2].c_str());
+				KI_RPY(2) = atof(line_vec[2].c_str());
 		    }
 		    if (line_vec[0] == "maxInteg_R") {
-	            maxInteg_RPY.v[0] = atof(line_vec[2].c_str());
+	            maxInteg_RPY(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "maxInteg_P") {
-				maxInteg_RPY.v[1] = atof(line_vec[2].c_str());
+				maxInteg_RPY(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "maxInteg_Y") {
-				maxInteg_RPY.v[2] = atof(line_vec[2].c_str());
+				maxInteg_RPY(2) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KP_wx") {
-				KP_w.v[0] = atof(line_vec[2].c_str());
+				KP_w(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KP_wy") {
-				KP_w.v[1] = atof(line_vec[2].c_str());
+				KP_w(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KP_wz") {
-		        KP_w.v[2]  = atof(line_vec[2].c_str());
+		        KP_w(2)  = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KD_wx") {
-				KD_w.v[0] = atof(line_vec[2].c_str());
+				KD_w(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KD_wy") {
-				KD_w.v[1] = atof(line_vec[2].c_str());
+				KD_w(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KD_wz") {
-		        KD_w.v[2]   = atof(line_vec[2].c_str());
+		        KD_w(2) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KI_wx") {
-				KI_w.v[0] = atof(line_vec[2].c_str());
+				KI_w(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KI_wy") {
-				KI_w.v[1] = atof(line_vec[2].c_str());
+				KI_w(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KI_wz") {
-		        KI_w.v[2]  = atof(line_vec[2].c_str());
+		        KI_w(2) = atof(line_vec[2].c_str());
 		    }
 		    if (line_vec[0] == "maxInteg_wx") {
-	            maxInteg_w.v[0] = atof(line_vec[2].c_str());
+	            maxInteg_w(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "maxInteg_wy") {
-				maxInteg_w.v[1] = atof(line_vec[2].c_str());
+				maxInteg_w(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "maxInteg_wz") {
-				maxInteg_w.v[2] = atof(line_vec[2].c_str());
+				maxInteg_w(2) = atof(line_vec[2].c_str());
 		    }
 		}
 		myfile.close();
@@ -178,40 +171,40 @@ void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos) {
 		while (getline (myfile2 ,line)) {
 		    line_vec = split(line, ' ');
 		    if (line_vec[0] == "KP_X") {
-	            KP_Pos.v[0] = atof(line_vec[2].c_str());
+	            KP_Pos(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KP_Y") {
-				KP_Pos.v[1] = atof(line_vec[2].c_str());
+				KP_Pos(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KP_Z") {
-				KP_Pos.v[2] = atof(line_vec[2].c_str());
+				KP_Pos(2) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KD_X") {
-	            KD_Pos.v[0] = atof(line_vec[2].c_str());
+	            KD_Pos(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KD_Y") {
-				KD_Pos.v[1] = atof(line_vec[2].c_str());
+				KD_Pos(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KD_Z") {
-				KD_Pos.v[2] = atof(line_vec[2].c_str());
+				KD_Pos(2) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KI_X") {
-	            KI_Pos.v[0] = atof(line_vec[2].c_str());
+	            KI_Pos(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KI_Y") {
-				KI_Pos.v[1] = atof(line_vec[2].c_str());
+				KI_Pos(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "KI_Z") {
-				KI_Pos.v[2] = atof(line_vec[2].c_str());
+				KI_Pos(2) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "maxInteg_X") {
-	            maxInteg_Pos.v[0] = atof(line_vec[2].c_str());
+	            maxInteg_Pos(0) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "maxInteg_Y") {
-				maxInteg_Pos.v[1] = atof(line_vec[2].c_str());
+				maxInteg_Pos(1) = atof(line_vec[2].c_str());
 		    }
 		    else if (line_vec[0] == "maxInteg_Z") {
-				maxInteg_Pos.v[2] = atof(line_vec[2].c_str());
+				maxInteg_Pos(2) = atof(line_vec[2].c_str());
 		    }
 		}
 		myfile2.close();

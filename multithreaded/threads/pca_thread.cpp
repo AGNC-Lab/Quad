@@ -1,20 +1,17 @@
 #include "PCA9685/pca9685.h"
 #include "pevents/pevents.h"	//Includes event handling (https://github.com/NeoSmart/PEvents)
 #include <pthread.h>
-
-#include "control/MatricesAndVectors.h"
-
-
+#include <Eigen/Dense>
 #include "threads/pca_thread.h"
 
-
+using Eigen::Matrix;
 using namespace neosmart;
 
 #define TERMINATE 6
 
 extern pthread_mutex_t PCA_Mutex;
 extern pthread_mutex_t stateMachine_Mutex;
-extern Vec4 PCA_Data;
+extern Matrix<float, 4, 1> PCA_Data;
 
 
 extern neosmart_event_t e_Timeout; //Always false event for forcing timeout of WaitForEvent
@@ -58,7 +55,7 @@ void *PCA_Timer(void *threadID){
 
 void *PCA_Task(void *threadID){
 	printf("PCA_Task has started!\n");
-	Vec4 localPCA_Data;
+	Matrix<float, 4, 1> localPCA_Data;
 	int localCurrentState;
 
 	WaitForEvent(e_PCA_trigger,-1); //Wait until trigger thread finishes loading
@@ -97,10 +94,10 @@ void *PCA_Task(void *threadID){
 		//PrintVec4(localPCA_Data, "PCA");
 
 		//Send motor pulses
-		pca.pwmPulse(0, 0, localPCA_Data.v[1]*2048 + 2048);
-        pca.pwmPulse(1, 0, localPCA_Data.v[2]*2048 + 2048);
-        pca.pwmPulse(2, 0, localPCA_Data.v[3]*2048 + 2048);
-		pca.pwmPulse(3, 0, localPCA_Data.v[0]*2048 + 2048);
+		pca.pwmPulse(0, 0, localPCA_Data(1)*2048 + 2048);
+        pca.pwmPulse(1, 0, localPCA_Data(2)*2048 + 2048);
+        pca.pwmPulse(2, 0, localPCA_Data(3)*2048 + 2048);
+		pca.pwmPulse(3, 0, localPCA_Data(0)*2048 + 2048);
 
 
 	}

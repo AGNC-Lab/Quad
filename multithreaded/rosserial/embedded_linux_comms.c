@@ -191,7 +191,7 @@ int elCommRead(int fd)
 
 int elCommWrite(int fd, uint8_t* data, int len)
 {
-  int rv;
+  int rv = 0;
   int length = len;
   int totalsent = 0;
   while (totalsent < length)
