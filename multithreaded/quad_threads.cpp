@@ -17,6 +17,7 @@
 #include "rosserial/ros.h"
 #include "rosserial/geometry_msgs/Wrench.h"
 #include "rosserial/qcontrol_defs/PVA.h"
+// #include "rosserial/tf2_msgs/TFMessage.h"
 
 #include "threads/keyboard_thread.h"
 #include "threads/control_thread.h"
@@ -97,7 +98,7 @@ I2C i2c('3');
 
 
 void *rosSpinTask(void *threadID){
-	int SamplingTime = 10;	//Sampling time in milliseconds
+	int SamplingTime = 5;	//Sampling time in milliseconds
 	int localCurrentState;
 	printf("rosSpinTask has started!\n");
 
@@ -108,7 +109,7 @@ void *rosSpinTask(void *threadID){
 	ros::Subscriber<qcontrol_defs::PVA> sub_ros_pva("/pva", handle_client_pva_msg);
 	_nh.subscribe(sub_ros_pva);	
 
-  	ros::Subscriber<geometry_msgs::TransformStamped> sub_tform("/vicon/Quad7/Quad7", handle_Vicon);
+  	ros::Subscriber<qcontrol_defs::PVA> sub_tform("/vicon/Quad7/PVA", handle_Vicon);
   	_nh.subscribe(sub_tform);
 
   	while(1){
@@ -632,21 +633,21 @@ int main(int argc, char *argv[])
 	else
 		threadCount += 1;
 
-	//Start kalman filter timer task
-	if (ReturnCode = pthread_create(&Kalman_TimerThread, NULL, Kalman_Timer, NULL)){
-		printf("Start Kalman_TimerThread failed; return code from pthread_create() is %d\n", ReturnCode);
-		exit(-1);
-	}
-	else
-		threadCount += 1;
+	// //Start kalman filter timer task
+	// if (ReturnCode = pthread_create(&Kalman_TimerThread, NULL, Kalman_Timer, NULL)){
+	// 	printf("Start Kalman_TimerThread failed; return code from pthread_create() is %d\n", ReturnCode);
+	// 	exit(-1);
+	// }
+	// else
+	// 	threadCount += 1;
 
-	//Start kalman filter task
-	if (ReturnCode = pthread_create(&Kalman_Thread, NULL, Kalman_Task, NULL)){
-		printf("Start PrintThread failed; return code from pthread_create() is %d\n", ReturnCode);
-		exit(-1);
-	}
-	else
-		threadCount += 1;
+	// //Start kalman filter task
+	// if (ReturnCode = pthread_create(&Kalman_Thread, NULL, Kalman_Task, NULL)){
+	// 	printf("Start PrintThread failed; return code from pthread_create() is %d\n", ReturnCode);
+	// 	exit(-1);
+	// }
+	// else
+	// 	threadCount += 1;
 
 	// //Start logger timer task
 	// if (ReturnCode = pthread_create(&LoggerTrigger, NULL, Logger_Timer, NULL)){

@@ -3,10 +3,7 @@
 #include "control/MatricesAndVectors.h"
 #include "control/QuatRotEuler.h"
 #include "threads/stateMachine.h"
-// #include "rosserial/ros.h"
-//#include "rosserial/std_msgs/Float32MultiArray.h"
 #include "rosserial/sensor_msgs/Joy.h"
-#include "rosserial/geometry_msgs/TransformStamped.h"
 #include "rosserial/qcontrol_defs/PVA.h"
 #include "kalman.h"
 
@@ -47,4 +44,4 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg);
 
 void handle_client_pva_msg(const qcontrol_defs::PVA& msg);
 
-void handle_Vicon(const geometry_msgs::TransformStamped& msg);
+void handle_Vicon(const qcontrol_defs::PVA& msg);

@@ -287,9 +287,9 @@ void *PosControl_Task(void *threadID){
 		pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
 		//Grab position and velocity estimation
-		pthread_mutex_lock(&PVA_Kalman_Mutex);
-			localPVAEst_quadVicon = PVA_quadKalman;
-		pthread_mutex_unlock(&PVA_Kalman_Mutex);
+		// pthread_mutex_lock(&PVA_Kalman_Mutex);
+		// 	localPVAEst_quadVicon = PVA_quadKalman;
+		// pthread_mutex_unlock(&PVA_Kalman_Mutex);
 	 	pthread_mutex_lock(&PVA_Vicon_Mutex);
 	 		localPVA_quadVicon = PVA_quadVicon;
 	  	pthread_mutex_unlock(&PVA_Vicon_Mutex);
@@ -318,9 +318,9 @@ void *PosControl_Task(void *threadID){
 	  	e_Pos.v[0] = localPVA_Ref.pos.position.x - localPVA_quadVicon.pos.position.x;
 	  	e_Pos.v[1] = localPVA_Ref.pos.position.y - localPVA_quadVicon.pos.position.y;
 	  	e_Pos.v[2] = localPVA_Ref.pos.position.z - localPVA_quadVicon.pos.position.z;
-	  	e_Vel.v[0] = localPVA_Ref.vel.linear.x - localPVAEst_quadVicon.vel.linear.x;
-	  	e_Vel.v[1] = localPVA_Ref.vel.linear.y - localPVAEst_quadVicon.vel.linear.y;
-	  	e_Vel.v[2] = localPVA_Ref.vel.linear.z - localPVAEst_quadVicon.vel.linear.z;
+	  	e_Vel.v[0] = localPVA_Ref.vel.linear.x - localPVA_quadVicon.vel.linear.x;
+	  	e_Vel.v[1] = localPVA_Ref.vel.linear.y - localPVA_quadVicon.vel.linear.y;
+	  	e_Vel.v[2] = localPVA_Ref.vel.linear.z - localPVA_quadVicon.vel.linear.z;
 	  	
 	  	//Get feedforward vector
 	  	acc_Ref.v[0] = localPVA_Ref.acc.linear.x;

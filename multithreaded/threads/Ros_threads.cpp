@@ -241,26 +241,17 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 
 }
 
-void handle_Vicon(const geometry_msgs::TransformStamped& msg){
+void handle_Vicon(const qcontrol_defs::PVA& msg){
 
  	pthread_mutex_lock(&PVA_Vicon_Mutex);	
-		PVA_quadVicon.pos.position.x = msg.transform.translation.x;
-		PVA_quadVicon.pos.position.y = msg.transform.translation.y;
-		PVA_quadVicon.pos.position.z = msg.transform.translation.z;
-
-		PVA_quadVicon.t = msg.header.stamp;
-
-		PVA_quadVicon.pos.orientation.w = msg.transform.rotation.w;
-		PVA_quadVicon.pos.orientation.x = msg.transform.rotation.x;
-		PVA_quadVicon.pos.orientation.y = msg.transform.rotation.y;
-		PVA_quadVicon.pos.orientation.z = msg.transform.rotation.z;
+ 		PVA_quadVicon = msg;
   	pthread_mutex_unlock(&PVA_Vicon_Mutex);
 
   	//Get yaw from vicon measurement and include it into measured quaternion
-  	Quat_vicon.v[0] = msg.transform.rotation.w;
-  	Quat_vicon.v[1] = msg.transform.rotation.x;
-  	Quat_vicon.v[2] = msg.transform.rotation.y;
-  	Quat_vicon.v[3] = msg.transform.rotation.z;
+  	Quat_vicon.v[0] = msg.pos.orientation.w;
+  	Quat_vicon.v[1] = msg.pos.orientation.x;
+  	Quat_vicon.v[2] = msg.pos.orientation.y;
+  	Quat_vicon.v[3] = msg.pos.orientation.z;
   	RPY_Vicon = Quat2RPY(Quat_vicon);
 
 	Vicon_YawQuat.v[0] = cos(RPY_Vicon.v[2]/2);
@@ -278,6 +269,8 @@ void handle_Vicon(const geometry_msgs::TransformStamped& msg){
 		IMU_Data_Quat_ViconYaw = IMU_localData_QuatViconYaw;
 		IMU_Data_RPY_ViconYaw = Quat2RPY(IMU_localData_QuatViconYaw);
 	pthread_mutex_unlock(&PVA_Vicon_Mutex);
+
+	// printf("Pos: %f %f %f \n", PVA_quadVicon.pos.position.x, PVA_quadVicon.pos.position.y, PVA_quadVicon.pos.position.z);
   	// kalman_v << kalman_state(3,0) << "," << kalman_state(4,0) << "," << kalman_state(5,0) << "\n";
   	// vicon_p << z(0,0) << "," << z(1,0) << "," << z(2,0) << "\n";
 
