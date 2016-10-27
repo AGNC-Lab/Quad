@@ -102,7 +102,7 @@ sudo ufw disable
 	* ROS topic: /pva
 * X: Joystick Position Control Mode
 	* ROS topic: /joy
-* Y: Joystick Attitude Mode
+* Y: Joystick Attitude Mode. Note: Push once for smooth attitude mode, twice for Aggressive mode. Aggressive mode doesn't work well with fully charged batteries (it gets better after ~2min flight).
 	* ROS topic: /joy
 * Start: Switch Yaw Measurements from IMU to Vicon (and vice-versa)
 
