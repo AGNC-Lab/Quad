@@ -104,6 +104,7 @@ sudo ufw disable
 	* ROS topic: /joy
 * Y: Joystick Attitude Mode
 	* ROS topic: /joy
+* Start: Switch Yaw Measurements from IMU to Vicon (and vice-versa)
 
 **The following keyboard keys corresponds to:**
 
@@ -123,7 +124,7 @@ sudo ufw disable
 * 0: Update controller parameters (loads all the Configuration files and store contents in the PIDs)
 * ESC: Software graceful exit (Avoid ctrl+C at all costs)
 
-The quadcopter can take either yaw data from IMU or Vicon. It can only go to position control mode with Vicon Yaw data. in order to switch Yaw source, type 'v'.
+The quadcopter can take either yaw data from IMU or Vicon. It can only go to position control mode with Vicon Yaw data. in order to switch Yaw source, type 'v' in the keyboard or push 'Start' in the Joystick.
 
 ## Stopping flight software and turning Quadcopter off:
 
@@ -143,5 +144,5 @@ shutdown -h now
 - [ ] Improve Position State Estimation
 - [ ] Add feed-forward to controllers
 - [ ] Add yaw reference for position control
-- [ ] Use joystick to switch the yaw source between Vicon/IMU
+- [x] Use joystick to switch the yaw source between Vicon/IMU
 - [ ] Modify function calls/args to passing by reference.
