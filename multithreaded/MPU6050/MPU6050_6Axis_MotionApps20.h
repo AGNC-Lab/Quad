@@ -688,7 +688,7 @@ uint8_t MPU6050::dmpInitialize() {
             setExternalFrameSync(MPU6050_EXT_SYNC_TEMP_OUT_L);
 
             //Setting DLPF (low pass filter) bandwidth to 5sHz...
-            setDLPFMode(MPU6050_DLPF_BW_42);
+            setDLPFMode(MPU6050_DLPF_BW_188);
 
             //Setting gyro sensitivity to +/- 2000 deg/sec...
             setFullScaleGyroRange(MPU6050_GYRO_FS_2000);

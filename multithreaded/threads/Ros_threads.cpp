@@ -11,8 +11,7 @@ int ButtonX = 0;
 int ButtonY = 0;
 int ButtonA = 0;
 int ButtonB = 0;
-int ButtonLB = 0;
-int ButtonRB = 0;
+int ButtonStart = 0;
 double SamplingTime = 1.0/20.0; //20Hz
 
 void handle_client_pva_msg(const qcontrol_defs::PVA& msg){
@@ -225,6 +224,9 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 		SetEvent(e_buttonY);
 		//printf("ButtonY Pushed!\n");
 	}
+	if(msg.buttons[7] && !ButtonStart){
+		SetEvent(e_SwitchYawSource);
+	}
 	// if (msg.buttons[4] && !ButtonLB){
 	// 	SetEvent(e_ButtonLB);
 	// 	//printf("ButtonY Pushed!\n");
@@ -237,6 +239,7 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 	ButtonB = msg.buttons[1];
 	ButtonX = msg.buttons[2];
 	ButtonY = msg.buttons[3];
+	ButtonStart = msg.buttons[7];
 	// ButtonLB = msg.buttons[4];
 	// ButtonRB = msg.buttons[5];
 

@@ -70,17 +70,23 @@ vector<string> split(const string &s, char delim) {
     return elems;
 }
 
-void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos) {
+void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos,char const *AttFile,char const *PosFile) {
 	Matrix<float, 3, 1> Zero_3x1 = Matrix<float, 3, 1>::Zero(3, 1);
 	Matrix<float, 3, 1> KP_RPY = Zero_3x1, KD_RPY = Zero_3x1, KI_RPY = Zero_3x1, maxInteg_RPY = Zero_3x1;
 	Matrix<float, 3, 1> KP_w = Zero_3x1, KD_w = Zero_3x1, KI_w = Zero_3x1, maxInteg_w = Zero_3x1;
 	Matrix<float, 3, 1> KP_Pos = Zero_3x1, KD_Pos = Zero_3x1, KI_Pos = Zero_3x1, maxInteg_Pos = Zero_3x1;
-
+	char AttParamPath[64];
+	char PosParamPath[64];
     string line;
     vector<string> line_vec;
 
+    sprintf(AttParamPath,"/home/root/%s",AttFile);
+    sprintf(PosParamPath,"/home/root/%s",PosFile);
+
+    // printf("%s\n",AttParamPath);
+
     //Get parameters for attitude controller
-    ifstream myfile ("/home/root/configAtt.txt");
+    ifstream myfile (AttParamPath);
     if (myfile.is_open()) {
 		while (getline (myfile ,line)) {
 		    line_vec = split(line, ' ');
@@ -162,11 +168,11 @@ void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos) {
 		updateControlParamPID(PID_angVel, KP_w, KI_w, KD_w, maxInteg_w);
     }
     else {
-		printf("Unable to open file /home/root/configAtt.txt \n"); 
+		printf("Unable to open file %s \n",AttParamPath); 
     }
 
     //Get parameters for position controller
-    ifstream myfile2 ("/home/root/configPos.txt");
+    ifstream myfile2 (PosParamPath);
     if (myfile2.is_open()) {
 		while (getline (myfile2 ,line)) {
 		    line_vec = split(line, ' ');
@@ -211,18 +217,8 @@ void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos) {
 		updateControlParamPID(PID_pos, KP_Pos, KI_Pos, KD_Pos, maxInteg_Pos);
     }
     else {
-		printf("Unable to open file /home/root/configPos.txt \n"); 
+		printf("Unable to open file %s \n", PosParamPath); 
     }
-
-    PrintVec3(PID_att->K_p, "PID_att Kp");
-    PrintVec3(PID_att->K_i, "PID_att Ki");
-    PrintVec3(PID_att->K_d, "PID_att Kd");
-    PrintVec3(PID_angVel->K_p, "PID_w Kp");
-    PrintVec3(PID_angVel->K_i, "PID_w Ki");
-    PrintVec3(PID_angVel->K_d, "PID_w Kd");
-    PrintVec3(PID_pos->K_p, "PID_pos Kp");
-    PrintVec3(PID_pos->K_i, "PID_pos Ki");
-    PrintVec3(PID_pos->K_d, "PID_pos Kd");
 
 	printf("Done updating control parameters\n");
 }

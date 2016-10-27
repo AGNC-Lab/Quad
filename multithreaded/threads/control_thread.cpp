@@ -206,7 +206,7 @@ void *AttControl_Task(void *threadID){
 void *PosControl_Timer(void *threadID){
 
 	printf("PosControl_Timer has started!\n");
-	int SamplingTime = 20;	//Sampling time in milliseconds
+	int SamplingTime = 10;	//Sampling time in milliseconds
 	int localCurrentState;
 
 	while(1){
@@ -234,7 +234,7 @@ void *PosControl_Timer(void *threadID){
 void *PosControl_Task(void *threadID){
 	printf("PosControl_Task has started!\n");
 
-	float dt = 0.020; 			//Sampling time
+	float dt = 0.010; 			//Sampling time
 	double m = 0.26, g_z = 9.81;  //Mass and gravity for quadcopter
 	double nominalThrust = 0.8;
 	int localCurrentState;

@@ -45,6 +45,6 @@ void updateErrorPID(PID_3DOF* PID, Matrix<float, 3, 1> feedForward, Matrix<float
 Matrix<float, 3, 1> outputPID(PID_3DOF PID);
 
 //Update PID parameters from file
-void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos);
+void updatePar(PID_3DOF *PID_att, PID_3DOF *PID_angVel, PID_3DOF *PID_pos,char const *AttFile,char const *PosFile);
 
 #endif

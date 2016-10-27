@@ -5,7 +5,7 @@
 void *IMU_Timer(void *threadID){
 
 	printf("IMU_Timer has started!\n");
-	int SamplingTime = 8;	//Sampling time in milliseconds
+	int SamplingTime = 3;	//Sampling time in milliseconds
 	int localCurrentState;
 
 	//setup();

@@ -115,7 +115,16 @@ void *KeyboardTask(void *threadID)
 		}
 		else if (ch == '0'){
 			pthread_mutex_lock(&PID_Mutex);
-				updatePar(&PID_att, &PID_angVel, &PID_pos);
+				updatePar(&PID_att, &PID_angVel, &PID_pos,"configAtt.txt","configPos.txt");
+				PrintVec3(PID_att.K_p, "PID_att Kp");
+			    PrintVec3(PID_att.K_i, "PID_att Ki");
+			    PrintVec3(PID_att.K_d, "PID_att Kd");
+			    PrintVec3(PID_angVel.K_p, "PID_w Kp");
+			    PrintVec3(PID_angVel.K_i, "PID_w Ki");
+			    PrintVec3(PID_angVel.K_d, "PID_w Kd");
+			    PrintVec3(PID_pos.K_p, "PID_pos Kp");
+			    PrintVec3(PID_pos.K_i, "PID_pos Ki");
+			    PrintVec3(PID_pos.K_d, "PID_pos Kd");
 			pthread_mutex_unlock(&PID_Mutex);
 		}
 		else if (ch == 'w') { //the 'w' key

@@ -3,6 +3,7 @@
 void *StateMachineTask(void *threadID){
 	int localCurrentState;
 	int localYawSource;
+	int AttitudeController = ATT_SMOOTH;
 
 	printf("Initializing system... \n");
 
@@ -41,7 +42,7 @@ void *StateMachineTask(void *threadID){
 			if(WaitForEvent(e_buttonA,0) == 0){
 				ResetEvent(e_buttonA);
 				pthread_mutex_lock(&stateMachine_Mutex);
-				currentState = MOTOR_MODE;
+					currentState = MOTOR_MODE;
 				pthread_mutex_unlock(&stateMachine_Mutex);
 				printf("Motor Mode!\n");
 			}
@@ -51,6 +52,9 @@ void *StateMachineTask(void *threadID){
 					pthread_mutex_lock(&stateMachine_Mutex);
 						currentState = POSITION_ROS_MODE;
 					pthread_mutex_unlock(&stateMachine_Mutex);
+					pthread_mutex_lock(&PID_Mutex);
+						updatePar(&PID_att, &PID_angVel, &PID_pos,"configAtt_PosMode.txt","configPos.txt");
+					pthread_mutex_unlock(&PID_Mutex);
 					printf("Position ROS Mode!\n");
 				}
 				else{
@@ -64,6 +68,9 @@ void *StateMachineTask(void *threadID){
 					pthread_mutex_lock(&stateMachine_Mutex);
 						currentState = POSITION_JOY_MODE;
 					pthread_mutex_unlock(&stateMachine_Mutex);
+					pthread_mutex_lock(&PID_Mutex);
+						updatePar(&PID_att, &PID_angVel, &PID_pos,"configAtt_PosMode.txt","configPos.txt");
+					pthread_mutex_unlock(&PID_Mutex);
 					printf("Position Joy Mode!\n");
 				}
 				else{
@@ -74,9 +81,37 @@ void *StateMachineTask(void *threadID){
 			if(WaitForEvent(e_buttonY,0) == 0){
 				ResetEvent(e_buttonY);
 				pthread_mutex_lock(&stateMachine_Mutex);
-				currentState = ATTITUDE_MODE;
+					currentState = ATTITUDE_MODE;
 				pthread_mutex_unlock(&stateMachine_Mutex);
-				printf("Attitude Mode!\n");
+
+				//Define which controller to use
+				if (localCurrentState != ATTITUDE_MODE){ 
+					//Smooth controller when first switch to attitude mode
+					pthread_mutex_lock(&PID_Mutex);
+						updatePar(&PID_att, &PID_angVel, &PID_pos,"configAtt.txt","configPos.txt");
+					pthread_mutex_unlock(&PID_Mutex);
+					printf("Attitude Smooth Mode!\n");
+					AttitudeController = ATT_SMOOTH;
+				}
+				else{
+					//Switch controller when Y is pushed again
+					if(AttitudeController == ATT_SMOOTH){
+						pthread_mutex_lock(&PID_Mutex);
+							updatePar(&PID_att, &PID_angVel, &PID_pos,"configAtt_PosMode.txt","configPos.txt");
+						pthread_mutex_unlock(&PID_Mutex);
+						printf("Attitude Aggressive Mode!\n");
+						AttitudeController = ATT_AGGRESSIVE;
+					}
+					else{
+						pthread_mutex_lock(&PID_Mutex);
+							updatePar(&PID_att, &PID_angVel, &PID_pos,"configAtt.txt","configPos.txt");
+						pthread_mutex_unlock(&PID_Mutex);
+						printf("Attitude Smooth Mode!\n");
+						AttitudeController = ATT_SMOOTH;
+					}
+
+				}
+
 			}
 		}
 
