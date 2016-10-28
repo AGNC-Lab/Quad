@@ -1,0 +1,36 @@
+r_i_ned[0] = 0
+r_i_ned[1] = 0
+r_i_ned[2] = 0
+
+v_i_ned[0] = 0
+v_i_ned[1] = 0
+v_i_ned[2] = 0
+
+roll_i_deg = 0
+pitch_i_deg = 0
+yaw_i_deg = 0
+
+omega_i_dps[0] = 0
+omega_i_dps[1] = 0
+omega_i_dps[2] = 0
+
+m = 0.35
+L = 0.085
+cT = 0
+cM2cT = 107.0
+S = 0.06
+cD = 0.5
+cM = 0.5
+rho = 1.0
+tau_up = 0.01
+tau_down = 0.01
+
+J[0] = 0.001
+J[1] = 0
+J[2] = 0
+J[3] = 0
+J[4] = 0.001
+J[5] = 0
+J[6] = 0
+J[7] = 0
+J[8] = 0.002

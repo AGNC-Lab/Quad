@@ -1,0 +1,52 @@
+wn_ne = 1.50
+zeta_ne = 1.00
+wn_d = 3.00
+zeta_d = 1.00
+min_altitude = 0
+max_altitude = 100
+max_north_pos = 100
+max_south_pos = 100
+max_east_pos = 100
+max_west_pos = 100
+max_hvel = 2.0
+max_vvel = 0.5
+
+max_tilt_deg = 45
+max_load_factor = 2.0
+max_pwm_coll_rate = 250
+max_hdg_rate_dps = 120
+min_Ts_gs = 0.25
+max_Ts_gs = 2.0
+max_delta_Ts_gs = 0.50
+max_omega_xy_dps = 200
+max_omega_z_dps = 250
+min_coll_pwm = 350
+max_coll_pwm = 700
+max_att_pwm = 400
+max_test_pwm = 350
+zero_thrust_pwm = 1000
+att_p_gain = 15.0
+
+Ts_ne_pid.k_p = 0
+Ts_ne_pid.k_i = 0
+Ts_ne_pid.k_d = 0
+Ts_ne_pid.int_min = 0
+Ts_ne_pid.int_max = 0
+
+Ts_z_pid.k_p = 50
+Ts_z_pid.k_i = 75
+Ts_z_pid.k_d = 0
+Ts_z_pid.int_min = 350
+Ts_z_pid.int_max = 600
+
+omega_xy_pid.k_p = 50
+omega_xy_pid.k_i = 5
+omega_xy_pid.k_d = 4
+omega_xy_pid.int_min = -100
+omega_xy_pid.int_max = 100
+
+omega_z_pid.k_p = 120
+omega_z_pid.k_i = 10
+omega_z_pid.k_d = 0
+omega_z_pid.int_min = -100
+omega_z_pid.int_max = 100

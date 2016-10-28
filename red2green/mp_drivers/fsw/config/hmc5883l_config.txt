@@ -1,0 +1,15 @@
+op_mode = 0
+avg_samp = 3
+rate = 5
+meas_mode = 0
+fs_mag = 1
+n_calibration_samples = 600
+C_dev2body[0] = 1
+C_dev2body[1] = 0
+C_dev2body[2] = 0
+C_dev2body[3] = 0
+C_dev2body[4] = 1
+C_dev2body[5] = 0
+C_dev2body[6] = 0
+C_dev2body[7] = 0
+C_dev2body[8] = 1

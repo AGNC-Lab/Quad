@@ -1,0 +1,34 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// TITLE:   utilities/formatting.h                                                                //
+// AUTHORS: Miki Szmuk                                                                            //
+// PI:      Behcet Acikmese                                                                       //
+// LAB:     Autonomous Controls Lab (ACL)                                                         //
+// LICENSE: Copyright 2016, All Rights Reserved                                                   //
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef UTILITIES_FORMATTING_H
+#define UTILITIES_FORMATTING_H
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "utilities/globals.h"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace formatting {
+  std::string logo();
+  std::string separator();
+  std::string borders(const std::string& substr="");
+  std::string title(const std::string& title);
+  std::string date();
+  std::string authors();
+  std::string lab();
+  std::string license();
+  std::string version(const std::string& version);  
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////

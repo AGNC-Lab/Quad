@@ -1,0 +1,27 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// TITLE:   states/all.h                                                                          //
+// AUTHORS: Miki Szmuk                                                                            //
+// LAB:     Autonomous Controls Lab (ACL)                                                         //
+// LICENSE: Copyright 2016, All Rights Reserved                                                   //
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef STATES_ALL_H
+#define STATES_ALL_H
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "states/ahrs_state.h"
+#include "states/ctrl_auth_mode.h"
+#include "states/health_state.h"
+#include "states/imu_state.h"
+#include "states/mag_state.h"
+#include "states/pwm_state.h"
+#include "states/qctrl_mode.h"
+#include "states/qctrl_state.h"
+#include "states/qsim_state.h"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////

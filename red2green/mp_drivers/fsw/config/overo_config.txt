@@ -1,0 +1,2 @@
+timeout_msec = 500
+pw_filt_factor = 0.9

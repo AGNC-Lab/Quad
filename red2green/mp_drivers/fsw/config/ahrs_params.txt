@@ -1,0 +1,15 @@
+std_P_qq_0 = 0.01
+std_P_bb_0_dps = 0.1
+std_gyro_dps = 0.05
+std_b_gyro_dps2 = 0.0005
+std_pseudo_q_norm = 0.001
+std_grav_gs = 0.001
+std_hdg_deg = 0.5
+
+n_imu_samples = 400
+n_mag_samples = 100
+
+tau = 300
+grav_update_threshold_gs = 0.05
+max_hdg_innov_deg = 10.0
+mag_dec_deg = 0.0

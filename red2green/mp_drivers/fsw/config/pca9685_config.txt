@@ -1,0 +1,26 @@
+n_calibration_samples = 5000
+calibration_pulse_width_usec = 500
+calibration_update_rate = 1000
+
+update_rate = 450
+
+min_pw_usec_1 = 1000
+min_pw_usec_2 = 1000
+min_pw_usec_3 = 1000
+min_pw_usec_4 = 1000
+min_pw_usec_5 = 1000
+min_pw_usec_6 = 1000
+
+max_pw_usec_1 = 2000
+max_pw_usec_2 = 2000
+max_pw_usec_3 = 2000
+max_pw_usec_4 = 2000
+max_pw_usec_5 = 2000
+max_pw_usec_6 = 2000
+
+channel_offset_1 = 0
+channel_offset_2 = 0
+channel_offset_3 = 0
+channel_offset_4 = 0
+channel_offset_5 = 0
+channel_offset_6 = 0
