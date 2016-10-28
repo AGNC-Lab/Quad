@@ -146,3 +146,5 @@ shutdown -h now
 - [ ] Add yaw reference for position control
 - [x] Use joystick to switch the yaw source between Vicon/IMU
 - [ ] Modify function calls/args to passing by reference.
+- [ ] Check att. controller using eq. (11) from SE(3) control paper
+- [ ] Try to find how to integrate RadioFalcon with the quads
