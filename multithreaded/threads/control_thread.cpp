@@ -236,7 +236,7 @@ void *PosControl_Task(void *threadID){
 
 	float dt = 0.010; 			//Sampling time
 	double m = 0.26, g_z = 9.81;  //Mass and gravity for quadcopter
-	double nominalThrust = 0.8;
+	double nominalThrust = 2.0;
 	int localCurrentState;
 	float yawDesired;
 	Matrix<float, 3, 1> e_Pos, e_Vel; 			//error in position and velocity

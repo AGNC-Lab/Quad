@@ -15,10 +15,13 @@ using Eigen::Matrix;
 #define K_WX    2			//Control gain for angular velocity about x
 #define K_WY    2			//Control gain for angular velocity about y
 #define K_WZ    1			//Control gain for angular velocity about z
-#define KT	1.09862e-6		//Thrust coefficient for the quadrotor's propellers
-#define KM	9.58815e-9		//Moment coefficient for the quadrotor's propellers
+#define KT_a	1.09862e-6	//Thrust coefficient for the quadrotor's propellers in function of PWM squared
+#define KT_b	1.05000e-3	//Thrust coefficient for the quadrotor's propellers in function of PWM
+#define KT_bSQR pow(KT_b,2)
 #define RAD     0.12		//Radius of quadcopter (distance between center and farther tip of propeller)
-
+#define SIN_45  0.7071067
+#define COS_45  0.7071067
+#define Ctm     9.22e-3
 
 //Functions
 
@@ -105,45 +108,95 @@ T coordinates assumes: u = [KT    KT    KT   KT   ] [pwm1^2]
                             KM    -KM   KM   -KM  ] [pwm4^2]    
 KT = thrust coefficient for the propellers
 KM = moment coefficient for the propellers */
+// Matrix<float, 4, 1> u2pwmTshape(Matrix<float, 4, 1> u){
+// 	//u = M.pwm^2 ==> pwm^2 = inv(M)*u
+
+// 	Matrix<float, 4, 4> inv_M;
+// 	Matrix<float, 4, 1> pwm_squared, pwm;
+
+// 	inv_M << 1 / (4 * KT), 0, -1 / (2 * KT * RAD), 1 / (4 * KM),
+// 			 1 / (4 * KT), -1 / (2 * KT * RAD), 0, -1 / (4 * KM),
+// 			 1 / (4 * KT), 0, 1 / (2 * KT * RAD), 1 / (4 * KM),
+// 			 1 / (4 * KT), 1 / (2 * KT * RAD), 0, -1 / (4 * KM);
+
+	
+// 	pwm_squared = inv_M*u;
+
+// 	//Saturate pwm values before taking square root to avoid square root of negative numbers
+// 	float mean_pwmSq = u(0) / (4 * KT);
+// 	pwm_squared << saturate(pwm_squared(0), 0, 2 * mean_pwmSq),
+// 				   saturate(pwm_squared(1), 0, 2 * mean_pwmSq),
+// 				   saturate(pwm_squared(2), 0, 2 * mean_pwmSq),
+// 				   saturate(pwm_squared(3), 0, 2 * mean_pwmSq);
+
+// 	//Assign outputs (note that Mikicopter assign minimum value at 1000
+// 	pwm << sqrt(pwm_squared(0))/1000,
+// 		   sqrt(pwm_squared(1))/1000,
+// 		   sqrt(pwm_squared(2))/1000,
+// 		   sqrt(pwm_squared(3))/1000;
+// // PrintVec4(pwm,"pwm");
+// 	return pwm;
+// }
+
+Matrix<float, 4, 1> Thrusts2PWM(Matrix<float, 4, 1> thrusts){
+
+	Matrix<float, 4, 1> pwm;
+	float val;
+	// float KT_bSqr = pow(KT_b,2);
+
+	//Solution to quadratic equation KT_a.x^2 + KT_b.x - thrust = 0
+	for (int i = 0; i < 4; i++){
+		val = (-KT_b+sqrt(KT_bSQR + 4*thrusts(i)*KT_a))/(2*KT_a);
+		pwm(i) = saturate(val,0,1000);
+	}
+
+	// pwm << sqrt(thrusts(0) / KT_a)/1000,
+	// 	   sqrt(thrusts(1) / KT_a)/1000,
+	// 	   sqrt(thrusts(2) / KT_a)/1000,
+	// 	   sqrt(thrusts(3) / KT_a)/1000;
+
+	//Assign outputs in range 0-1 (we calibrated KTs using 0-1000 range)
+	return pwm*0.001;
+}
+
+/* Convert inputs u = [Thrust, torque_roll, torque_pitch, torque_yaw] into pwm values (T coordinates)
+T coordinates assumes: u = [1    1   1    1  ] [PWM1(T1)]
+						   [0   -L   0    L  ] [PWM2(T2)]
+						   [-L   0   L    0  ] [PWM3(T3)]
+						   [Ctm -Ctm Ctm -Ctm] [PWM4(T4)]
+Ctm = ratio between Moment and Thrust per propeller */
 Matrix<float, 4, 1> u2pwmTshape(Matrix<float, 4, 1> u){
 	//u = M.pwm^2 ==> pwm^2 = inv(M)*u
 
 	Matrix<float, 4, 4> inv_M;
-	Matrix<float, 4, 1> pwm_squared, pwm;
+	Matrix<float, 4, 1> thrusts;
 
-	inv_M << 1 / (4 * KT), 0, -1 / (2 * KT * RAD), 1 / (4 * KM),
-			 1 / (4 * KT), -1 / (2 * KT * RAD), 0, -1 / (4 * KM),
-			 1 / (4 * KT), 0, 1 / (2 * KT * RAD), 1 / (4 * KM),
-			 1 / (4 * KT), 1 / (2 * KT * RAD), 0, -1 / (4 * KM);
+	inv_M << 1 / 4.0, 0,             -1 / (2 * RAD), 1 / (4 * Ctm),
+			 1 / 4.0, -1 / (2 * RAD), 0,            -1 / (4 * Ctm),
+			 1 / 4.0, 0,              1 / (2 * RAD), 1 / (4 * Ctm),
+			 1 / 4.0, 1 / (2 * RAD),  0,            -1 / (4 * Ctm);
 
 	
-	pwm_squared = inv_M*u;
+	thrusts = inv_M*u;
 
 	//Saturate pwm values before taking square root to avoid square root of negative numbers
-	float mean_pwmSq = u(0) / (4 * KT);
-	pwm_squared << saturate(pwm_squared(0), 0, 2 * mean_pwmSq),
-				   saturate(pwm_squared(1), 0, 2 * mean_pwmSq),
-				   saturate(pwm_squared(2), 0, 2 * mean_pwmSq),
-				   saturate(pwm_squared(3), 0, 2 * mean_pwmSq);
+	float mean_thrusts = u(0) / 4.0;
+	thrusts <<  saturate(thrusts(0), 0, 2 * mean_thrusts),
+			    saturate(thrusts(1), 0, 2 * mean_thrusts),
+				saturate(thrusts(2), 0, 2 * mean_thrusts),
+				saturate(thrusts(3), 0, 2 * mean_thrusts);
 
-	//Assign outputs (note that Mikicopter assign minimum value at 1000
-	pwm << sqrt(pwm_squared(0))/1000,
-		   sqrt(pwm_squared(1))/1000,
-		   sqrt(pwm_squared(2))/1000,
-		   sqrt(pwm_squared(3))/1000;
-//PrintVec4(pwm,"pwm");
-	return pwm;
+	return Thrusts2PWM(thrusts);
 }
 
 /* Convert inputs u = [Thrust, torque_roll, torque_pitch, torque_yaw] into pwm values (X coordinates)
-X coordinates assumes: u =[1    0      0       0 ] [KT    KT    KT   KT   ] [pwm1^2]
-			  [0    cos(o) -sin(o) 0 ] [0     -KT*L 0    KT*L ] [pwm2^2]
-			  [0    sin(o) cos(o)  0 ] [-KT*L 0     KT*L 0    ] [pwm3^2]
-			  [0    0      0       1 ] [KM    -KM   KM   -KM  ] [pwm4^2]    
-KT = thrust coefficient for the propellers
-KM = moment coefficient for the propellers */
+X coordinates assumes: u =[1    0      0       0 ] [1    1   1    1  ] [PWM1(T1)]
+						  [0    cos(o) -sin(o) 0 ] [0   -L   0    L  ] [PWM2(T2)]
+						  [0    sin(o) cos(o)  0 ] [-L   0   L    0  ] [PWM3(T3)]
+						  [0    0      0       1 ] [Ctm -Ctm Ctm -Ctm] [PWM4(T4)]    
+Ctm = ratio between Moment and Thrust per propeller */
 Matrix<float, 4, 1> u2pwmXshape(Matrix<float, 4, 1> u){
-	double angle = PI / 4;	//Angle between T coordinates and X coordinates
+	// double angle = PI / 4;	//Angle between T coordinates and X coordinates
 	Matrix<float, 4, 4> Rot;				//Rotation matrix (note that the inverse of a rotation matrix is its transpose)
 	//u.v[3] = 0;
 	// Rot(.M[0][0]) = 1; Rot.M[0][1] = 0;           Rot.M[0][2] = 0;          Rot.M[0][3] = 0;
@@ -151,15 +204,16 @@ Matrix<float, 4, 1> u2pwmXshape(Matrix<float, 4, 1> u){
 	// Rot.M[2][0] = 0; Rot.M[2][1] = -sin(angle); Rot.M[2][2] = cos(angle); Rot.M[2][3] = 0;
 	// Rot.M[3][0] = 0; Rot.M[3][1] = 0;           Rot.M[3][2] = 0;          Rot.M[3][3] = 1;
 
-	Rot << 1,           0,          0, 0,
-		   0,  cos(angle), sin(angle), 0,
-		   0, -sin(angle), cos(angle), 0,
-		   0,           0,          0, 1;
+	Rot << 1,       0,      0, 0,
+		   0,  COS_45, SIN_45, 0,
+		   0, -SIN_45, COS_45, 0,
+		   0,       0,      0, 1;
 	//PrintVec4(u,"u");
 
 	//Multiply inverse of rotation matrix by input u
 	Matrix<float, 4, 1> uX = Rot*u;
 	//PrintMat4x4(Rot);
 	//PrintVec4(uX,"uX");
+	// u2pwmTshape2(uX);
 	return u2pwmTshape(uX);
 }

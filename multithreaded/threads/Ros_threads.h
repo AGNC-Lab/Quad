@@ -36,8 +36,8 @@ extern Matrix<float, 4, 1> Contr_Input;
 extern int threadCount;		//Counts active threads
 
 #define PI 3.1415
-#define maxThrust_AttMode 1.5
-#define maxThrust_MotorMode 0.3
+#define maxThrust_AttMode 4.0
+#define maxThrust_MotorMode 0.8
 #define maxVel_PosMode 0.5
 #define yaw_Inc PI/90
 
