@@ -236,7 +236,7 @@ void *PosControl_Task(void *threadID){
 
 	float dt = 0.010; 			//Sampling time
 	double m = 0.26, g_z = 9.81;  //Mass and gravity for quadcopter
-	double nominalThrust = 2.0;
+	double nominalThrust = 2.5;
 	int localCurrentState;
 	float yawDesired;
 	Matrix<float, 3, 1> e_Pos, e_Vel; 			//error in position and velocity
@@ -246,6 +246,7 @@ void *PosControl_Task(void *threadID){
 	Matrix<float, 3, 1> z_bdes, x_cdes, y_bdes, x_bdes;
 	Matrix<float, 4, 1> IMU_localData_Quat;
 	qcontrol_defs::PVA localPVAEst_quadVicon, localPVA_quadVicon, localPVA_Ref;
+	float cos_YawHalf, sin_YawHalf;
 
 	Matrix<float, 3, 1> z_w;	//z vector of the inertial frame
 	Matrix<float, 3, 1> z_b;	//z vector of the body frame
@@ -320,7 +321,7 @@ void *PosControl_Task(void *threadID){
 	  	acc_Ref << localPVA_Ref.acc.linear.x,
 	  			   localPVA_Ref.acc.linear.y,
 	  			   localPVA_Ref.acc.linear.z;
-	  	feedForward = z_w*nominalThrust;
+	  	feedForward = z_w*nominalThrust + acc_Ref;
 	  	// feedForward = Add3x1Vec(ScaleMatrix<float, 3, 1>(z_w, nominalThrust), ScaleMatrix<float, 3, 1>(acc_Ref, 1.0/gz));//feedForward = m*gz*z_w + m*ref_dotdot
 
 		//Vehicle attitude
@@ -347,11 +348,18 @@ void *PosControl_Task(void *threadID){
 
 		//Find desired attitude from desired force and yaw angle
 		z_bdes = normalizeVec3(Fdes);
-		// x_cdes(0) = cos(yawDesired); 
-		// x_cdes(1) = sin(yawDesired); 
-		x_cdes << 1, 
-				  0, 
-				  0;
+
+		cos_YawHalf = localPVA_Ref.pos.orientation.w;
+		sin_YawHalf = localPVA_Ref.pos.orientation.z;
+
+		//cos(2a) = 2cos^2(a) - 1
+		//sin(2a) = 2*sin(a)cos(a)
+		// x_cdes << 2*pow(cos_YawHalf,2.0) - 1.0, 
+		// 		  2*sin_YawHalf*cos_YawHalf, 
+		// 		  0;
+		x_cdes << 1.0, 
+				    0, 
+					0;
 		y_bdes = normalizeVec3(z_bdes.cross(x_cdes));
 		x_bdes = y_bdes.cross(z_bdes);
 

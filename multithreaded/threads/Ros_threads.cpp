@@ -13,6 +13,7 @@ int ButtonA = 0;
 int ButtonB = 0;
 int ButtonStart = 0;
 double SamplingTime = 1.0/20.0; //20Hz
+double yawRefPosMode = 0;
 
 void handle_client_pva_msg(const qcontrol_defs::PVA& msg){
 
@@ -38,6 +39,9 @@ void handle_client_pva_msg(const qcontrol_defs::PVA& msg){
 			PVA_RefClient.vel.linear.x = msg.vel.linear.x;
 			PVA_RefClient.vel.linear.y = msg.vel.linear.y;
 			PVA_RefClient.vel.linear.z = msg.vel.linear.z;
+			PVA_RefJoy.acc.linear.x = msg.acc.linear.x;
+			PVA_RefJoy.acc.linear.y = msg.acc.linear.y;
+			PVA_RefJoy.acc.linear.z = msg.acc.linear.z;
 	  	pthread_mutex_unlock(&posRefClient_Mutex);	
 	}
 	// else{
@@ -141,6 +145,12 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 		pthread_mutex_unlock(&attRefJoy_Mutex);
 	}
 	if(localCurrentState == POSITION_JOY_MODE){
+    	if (yaw_ctr_neg < 0) {
+			yawRefPosMode -= yaw_Inc;
+		}								//yaw
+		if (yaw_ctr_pos < 0) {
+			yawRefPosMode += yaw_Inc;
+		}
 		pthread_mutex_lock(&ThrustJoy_Mutex);
 			ThrustJoy = msg.axes[1] * maxThrust_AttMode;
 		pthread_mutex_unlock(&ThrustJoy_Mutex);
@@ -149,13 +159,21 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 			PVA_RefJoy.pos.position.x += msg.axes[4]*maxVel_PosMode*SamplingTime; //20hz
 			PVA_RefJoy.pos.position.y += msg.axes[3]*maxVel_PosMode*SamplingTime;
 			PVA_RefJoy.pos.position.z += (msg.buttons[5]-msg.buttons[4])*maxVel_PosMode*SamplingTime;
+			PVA_RefJoy.pos.orientation.w = cos(yawRefPosMode/2);
+			PVA_RefJoy.pos.orientation.x = 0;
+			PVA_RefJoy.pos.orientation.y = 0;
+			PVA_RefJoy.pos.orientation.z = sin(yawRefPosMode/2);
 			PVA_RefJoy.vel.linear.x = msg.axes[4]*maxVel_PosMode;
 			PVA_RefJoy.vel.linear.y = msg.axes[3]*maxVel_PosMode;
 			PVA_RefJoy.vel.linear.z = (msg.buttons[5]-msg.buttons[4])*maxVel_PosMode;
+			PVA_RefJoy.acc.linear.x = 0;
+			PVA_RefJoy.acc.linear.y = 0;
+			PVA_RefJoy.acc.linear.z = 0;
 			//TODO: add yaw reference here in quaternion
 	  	pthread_mutex_unlock(&posRefJoy_Mutex);	
 	}
 	else{ //If not in position mode, set position references to read values
+		yawRefPosMode = IMU_localData_RPY_ViconYaw(2);
 		pthread_mutex_lock(&posRefJoy_Mutex);
 			PVA_RefJoy.pos.position.x = localPVA_quadVicon.pos.position.x;
 			PVA_RefJoy.pos.position.y = localPVA_quadVicon.pos.position.y;
@@ -163,6 +181,9 @@ void handle_mp_joy_msg(const sensor_msgs::Joy& msg){
 			PVA_RefJoy.vel.linear.x = 0;
 			PVA_RefJoy.vel.linear.y = 0;
 			PVA_RefJoy.vel.linear.z = 0;
+			PVA_RefJoy.acc.linear.x = 0;
+			PVA_RefJoy.acc.linear.y = 0;
+			PVA_RefJoy.acc.linear.z = 0;
 		pthread_mutex_unlock(&posRefJoy_Mutex);	
 	}
 
